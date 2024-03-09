@@ -1,6 +1,8 @@
-CFLAGS=-Os -g -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes
+CFLAGS= -g -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
-all: kiss.o metric.o
+all: embedax25
+
+embedax25: embedax25.c kiss.o metric.o ax25.o driver-tcpip.o packet.o
 
 clean:
 	rm -f *.o

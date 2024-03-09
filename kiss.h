@@ -7,7 +7,7 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte);
 
 /* Transmit one packet.
  *
- * Returns ACKMODE packet id.
+ * Returns ACKMODE packet id or 0 if ackmode is not enabled for this.
  */
 uint16_t kiss_xmit(uint8_t port, uint8_t *buffer, size_t len);
 

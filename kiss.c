@@ -1,5 +1,6 @@
 #include "kiss.h"
 #include "ax25.h"
+#include "platform.h"
 #include "metric.h"
 #include "serial.h"
 
@@ -19,6 +20,7 @@ enum {
     KISS_TXTAIL = 4, /* 1 byte, 10ms time to keep transmitting after frame complete (obsolete) */
     KISS_FULLDUP = 5, /* 1 byte, 0 == half duplex, 1 == full duplex */
     KISS_SETHW = 6, /* implementation defined */
+    KISS_FEC = 8, /* FEC? */
     KISS_ACKMODE = 12, /* 2 byte ID, N bytes data */
     KISS_POLL = 14, /* 0 bytes data */
 };
@@ -26,11 +28,11 @@ enum {
 static uint8_t buffer[MAX_SERIAL][BUFFER_SIZE];
 static size_t buffer_len[MAX_SERIAL] = {0,};
 
-static enum state_t {
+static enum kiss_state_t {
     STATE_WAIT,
     STATE_DATA,
     STATE_ESCAPE,
-} state[MAX_SERIAL] = {STATE_WAIT, };
+} kiss_state[MAX_SERIAL] = {STATE_WAIT, };
 
 static uint16_t next_id = 0;
 
@@ -78,10 +80,10 @@ static void kiss_recv(uint8_t serial) {
 void kiss_recv_byte(uint8_t serial, uint8_t byte) {
     if (serial >= MAX_SERIAL)
         return;
-    switch (state[serial]) {
+    switch (kiss_state[serial]) {
         case STATE_WAIT:
             if (byte == FEND) {
-                state[serial] = STATE_DATA;
+                kiss_state[serial] = STATE_DATA;
                 buffer_len[serial] = 0;
             } else {
                 /* Ignore */
@@ -91,15 +93,15 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte) {
             switch (byte) {
                 case FEND:
                     kiss_recv(serial);
-                    state[serial] = STATE_DATA;
+                    kiss_state[serial] = STATE_DATA;
                     break;
                 case FESC:
-                    state[serial] = STATE_ESCAPE;
+                    kiss_state[serial] = STATE_ESCAPE;
                     break;
                 default:
                     buffer[serial][buffer_len[serial]++] = byte;
                     if (buffer_len[serial] >= BUFFER_SIZE) {
-                        state[serial] = STATE_WAIT;
+                        kiss_state[serial] = STATE_WAIT;
                         metric_inc(METRIC_OVERRUN);
                     }
                     break;
@@ -110,19 +112,19 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte) {
                 case TFEND:
                     buffer[serial][buffer_len[serial]++] = FEND;
                     if (buffer_len[serial] >= BUFFER_SIZE) {
-                        state[serial] = STATE_WAIT;
+                        kiss_state[serial] = STATE_WAIT;
                         metric_inc(METRIC_OVERRUN);
                     } else {
-                        state[serial] = STATE_DATA;
+                        kiss_state[serial] = STATE_DATA;
                     }
                     break;
                 case TFESC:
                     buffer[serial][buffer_len[serial]++] = FESC;
                     if (buffer_len[serial] >= BUFFER_SIZE) {
                         metric_inc(METRIC_OVERRUN);
-                        state[serial] = STATE_WAIT;
+                        kiss_state[serial] = STATE_WAIT;
                     } else {
-                        state[serial] = STATE_DATA;
+                        kiss_state[serial] = STATE_DATA;
                     }
                     break;
                 default:
@@ -133,7 +135,7 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte) {
                      * assembly continues.", although I'd
                      * be include to discard the frame and
                      * transition into STATE_WAIT */
-                    state[serial] = STATE_DATA;
+                    kiss_state[serial] = STATE_DATA;
                     metric_inc(METRIC_BAD_ESCAPE);
                     break;
             }
@@ -143,15 +145,15 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte) {
 static void kiss_xmit_byte(uint8_t serial, uint8_t byte) {
     switch(byte) {
         case FEND:
-            send_ch(serial, FESC);
-            send_ch(serial, TFEND);
+            serial_putch(serial, FESC);
+            serial_putch(serial, TFEND);
             break;
         case FESC:
-            send_ch(serial, FESC);
-            send_ch(serial, TFESC);
+            serial_putch(serial, FESC);
+            serial_putch(serial, TFESC);
             break;
         default:
-            send_ch(serial, byte);
+            serial_putch(serial, byte);
             break;
     }
 }
@@ -162,14 +164,14 @@ uint16_t kiss_xmit(uint8_t port, uint8_t *buffer, size_t len) {
         id = next_id++;
     } while (id == 0);
 
-    kiss_xmit_byte(port_to_serial(port), FEND);
+    serial_putch(port_to_serial(port), FEND);
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_ACKMODE);
     kiss_xmit_byte(port_to_serial(port), id >> 8);
     kiss_xmit_byte(port_to_serial(port), id & 0xFF);
     for (size_t i = 0; i < len; ++i) {
         kiss_xmit_byte(port_to_serial(port), buffer[i]);
     }
-    send_ch(port_to_serial(port), FEND);
+    serial_putch(port_to_serial(port), FEND);
 
     return id;
 }
@@ -179,6 +181,7 @@ void kiss_set_txdelay(uint8_t port, uint8_t delay) {
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_TXDELAY);
     kiss_xmit_byte(port_to_serial(port), delay);
     kiss_xmit_byte(port_to_serial(port), FEND);
+    debug("set txdelay");
 }
 
 void kiss_set_slottime(uint8_t port, uint8_t delay) {
@@ -186,6 +189,7 @@ void kiss_set_slottime(uint8_t port, uint8_t delay) {
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_SLOTTIME);
     kiss_xmit_byte(port_to_serial(port), delay);
     kiss_xmit_byte(port_to_serial(port), FEND);
+    debug("set slottime");
 }
 
 void kiss_set_duplex(uint8_t port, bool full_duplex) {
@@ -193,4 +197,5 @@ void kiss_set_duplex(uint8_t port, bool full_duplex) {
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_FULLDUP);
     kiss_xmit_byte(port_to_serial(port), full_duplex ? 1 : 0);
     kiss_xmit_byte(port_to_serial(port), FEND);
+    debug("set duplex");
 }
