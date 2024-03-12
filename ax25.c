@@ -34,15 +34,6 @@ typedef enum type_t {
     TYPE_PREV3= 0b11, /* Used in previous versions */
 } type_t;
 
-enum ax25_state_t {
-    AX25_READY,
-    AX25_RECEIVING,
-    AX25_TRANSMITTER_SUPPRESSION,
-    AX25_TRANSMITTER_START,
-    AX25_TRANSMITTING,
-    AX25_DIGIPEATING,
-    AX25_RECEIVER_START,
-};
 
 enum { SSID_LEN = 7 };
 
@@ -87,20 +78,65 @@ static bool ssid_cmp(const ssid_t *lhs, const ssid_t *rhs) {
     return memcmp(lhs->ssid, rhs->ssid, sizeof(lhs->ssid));
 }
 
+typedef enum state_t {
+    STATE_DISCONNECTED,
+    STATE_INFO_TXFR,
+    STATE_SABM_SENT,
+    STATE_DISC_SENT,
+    STATE_ACK_WAIT,
+    STATE_REMOTE_BUSY,
+    STATE_LOCAL_BUSY,
+    STATE_REJ_SENT,
+} state_t;
+
 typedef struct connection_t {
     ssid_t remote;
-    ssid_t local;
     int snd_state; //< Send State V(S)
     int ack_state; //< Acknowledgement State V(A)
     int rcv_state; //< Receive State V(R)
-    bool in_use;
+    state_t state;
 } connection_t;
 
+static connection_t conntbl[MAX_CONN] = { { .state = STATE_DISCONNECTED, }, };
 
-static connection_t conntbl[MAX_CONN] = { { .in_use = false, }, };
+static connection_t *conn_find(ssid_t *remote) {
+    for(size_t i = 0; i < MAX_CONN; ++i) {
+        if (conntbl[i].state != STATE_DISCONNECTED && ssid_cmp(&conntbl[i].remote, remote) == 0)
+            return &conntbl[i];
+    }
+    return NULL;
+}
 
-void ax25_recv(uint8_t port, uint8_t pkt[], size_t pktlen) {
-    ax25_recv_ackmode(port, 0, pkt, pktlen);
+static bool conn_is_extended(connection_t *conn) {
+    /* TODO */
+    return false;
+}
+
+static connection_t *conn_find_or_create(ssid_t *remote) {
+    connection_t *conn = NULL;
+    for(size_t i = 0; i < MAX_CONN; ++i) {
+        if (conntbl[i].state != STATE_DISCONNECTED) {
+            /* Is this in use by the address we are looking for? */
+            if (ssid_cmp(&conntbl[i].remote, remote) == 0) {
+                return &conntbl[i];
+            }
+        } else {
+            /* Remember we've found a free conntbl entry in case we need it */
+            conn = &conntbl[i];
+        }
+    }
+    if (conn) {
+        /* Initialise the structure */
+        conn->remote = *remote;
+        conn->snd_state = 0;
+        conn->ack_state = 0;
+        conn->rcv_state = 0;
+        conn->state = STATE_DISCONNECTED;
+    } else {
+        /* Record that there were no more available connctions */
+        metric_inc(METRIC_NO_CONNS);
+    }
+    return conn;
 }
 
 /* Address 0 and 1 have a C bit, address 2 and 3 have an H bit */
@@ -111,10 +147,14 @@ static bool get_ch_bit(uint8_t pkt[], size_t pktlen, size_t addrnum) {
 }
 
 static const char hexit[] = "0123456789ABCDEF";
+static void debug_byte(const uint8_t byte) {
+    debug_putch(hexit[byte >> 4]);
+    debug_putch(hexit[byte & 0x0F]);
+}
+
 static void packet_debug(packet_t *packet) {
     for(size_t i=0; i < packet->len; ++i) {
-        debug_putch(hexit[packet->buffer[i] >> 4]);
-        debug_putch(hexit[packet->buffer[i] & 0x0F]);
+        debug_byte(packet->buffer[i]);
         debug_putch(' ');
     }
     debug_putch('\n');
@@ -127,7 +167,7 @@ static packet_t *make_response(ssid_t address[], size_t address_count, uint8_t p
     packet->port = port;
     ssid_push(packet, &address[ADDR_SRC]); /* Swap src and dst addresses */
     ssid_push(packet, &address[ADDR_DST]);
-    packet->buffer[SSID_LEN-1] |= 0b10000000; /* Set the "response" bit */
+    packet->buffer[2*SSID_LEN-1] |= 0b10000000; /* Set the "response" bit */
 
     /* Add digipeater addresses in reverse order */
     for(size_t i=address_count-1; i>=ADDR_DIGI1; i--) {
@@ -140,9 +180,29 @@ static packet_t *make_response(ssid_t address[], size_t address_count, uint8_t p
     return packet;
 }
 
-static void i_frame(type_t type, uint8_t control, uint8_t pkt[], size_t pktlen, ssid_t address[static 2], size_t address_count) {
+/* Make an UA (unnumbered acknowledgement) frame */
+static packet_t *make_ua(ssid_t address[], size_t address_count, uint8_t port) {
+    packet_t *packet = make_response(address, address_count, port);
+    if (packet) {
+        packet_push_byte(packet, 0b01110011);
+    }
+    return packet;
+}
+
+/* Make an DM (disconnected mode) frame */
+static packet_t *make_dm(ssid_t address[], size_t address_count, uint8_t port) {
+    packet_t *packet = make_response(address, address_count, port);
+    if (packet) {
+        packet_push_byte(packet, 0b01100011);
+    }
+    return packet;
+}
+
+static void i_frame(type_t type, uint8_t ns, bool pf, uint8_t nr, uint8_t pkt[], size_t pktlen, ssid_t address[static 2], size_t address_count) {
     (void) type;
-    (void) control;
+    (void) ns;
+    (void) pf;
+    (void) nr;
     (void) pkt;
     (void) pktlen;
     (void) address;
@@ -150,9 +210,9 @@ static void i_frame(type_t type, uint8_t control, uint8_t pkt[], size_t pktlen, 
     metric_inc(METRIC_UNKNOWN_FRAME);
 }
 
-static void s_frame(type_t type, uint8_t control, uint8_t pkt[], size_t pktlen, ssid_t address[static 2], size_t address_count) {
+static void s_frame(type_t type, uint8_t nr, uint8_t pkt[], size_t pktlen, ssid_t address[static 2], size_t address_count) {
     (void) type;
-    (void) control;
+    (void) nr;
     (void) pkt;
     (void) pktlen;
     (void) address;
@@ -175,8 +235,42 @@ static void test_frame(type_t type, uint8_t pkt[], size_t pktlen, ssid_t address
     }
 }
 
+/* Set Async Balanced Mode - aka, initiate a connection */
+static void sabm_frame(type_t type, ssid_t address[], size_t address_count) {
+    if (type != TYPE_CMD) {
+        debug_byte(type);
+        metric_inc(METRIC_NOT_COMMAND);
+        return;
+    }
+    connection_t *conn = conn_find_or_create(&address[ADDR_SRC]);
+    packet_t *packet = NULL;
+    if (conn) {
+        packet = make_ua(address, address_count, /* TODO: port */ 0);
+        metric_inc(METRIC_SABM_SUCCESS);
+        /* Reinitialise the connection */
+        conn->remote = address[ADDR_SRC];
+        conn->snd_state = 0;
+        conn->ack_state = 0;
+        conn->rcv_state = 0;
+        conn->state = STATE_INFO_TXFR;
+    } else {
+        packet = make_dm(address, address_count, /* TODO: port */ 0);
+        metric_inc(METRIC_SABM_FAIL);
+    }
+    if (packet) {
+        kiss_xmit(packet->port, packet->buffer, packet->len);
+        packet_free(&packet);
+    }
+}
+
 static void u_frame(type_t type, uint8_t control, uint8_t pkt[], size_t pktlen, ssid_t address[], size_t address_count) {
-    if ((control & 0b11101111) == 0b11100011) {
+    if (pktlen < 1) {
+        metric_inc(METRIC_UNDERRUN);
+        return;
+    }
+    if ((control & 0b11101111) == 0b00101111) {
+        sabm_frame(type, address, address_count);
+    } else if ((control & 0b11101111) == 0b11100011) {
         test_frame(type, pkt, pktlen, address, address_count);
     } else {
         metric_inc(METRIC_UNKNOWN_FRAME);
@@ -249,8 +343,8 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
      * "CMD" (Command)
      * "RSP" (Response)
      */
-    type_t type = (get_ch_bit(pkt, pktlen, ADDR_DST) ? 0b10 : 0b00)
-                | (get_ch_bit(pkt, pktlen, ADDR_SRC) ? 0b01 : 0b00);
+    type_t type = (get_ch_bit(pkt, pktlen, ADDR_DST) ? 0b01 : 0b00)
+                | (get_ch_bit(pkt, pktlen, ADDR_SRC) ? 0b10 : 0b00);
 
     /* Figure out which type of frame this is from the control field */
     if (offset >= pktlen) {
@@ -258,16 +352,49 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
         return;
     }
 
-    /* TODO: The control frame might be 16bits long */
-    uint8_t control = pkt[offset++];
-    if ((control & 0b0000001) == 0b0)
-        i_frame(type, control, &pkt[offset], pktlen - offset, address, address_count);
-    else if ((control & 0b00000011) == 0b01)
-        s_frame(type, control, &pkt[offset], pktlen - offset, address, address_count);
-    else if ((control & 0b00000011) == 0b11)
-        u_frame(type, control, &pkt[offset], pktlen - offset, address, address_count);
-    else
-        CHECK(!"can't happen");
+    uint8_t control = pkt[offset];
+    bool pf;
+    if ((control & 0b00000011) == 0b11) {
+        /* unconnected frames always have an 8 bit control field */
+        pf = (control & 0b00010000) != 0;
+        u_frame(type, control, &pkt[offset+1], pktlen - (offset+1), address, address_count);
+    } else {
+        /* these are both connected frames */
+        connection_t *conn = conn_find(&address[ADDR_SRC]);
+        if (!conn) {
+            /* TODO */
+        }
+        offset++;
+        uint8_t nr;
+        if (conn_is_extended(conn)) {
+            uint8_t control2 = pkt[offset++];
+            pf = (control2 & 0b00000001) != 0;
+            nr = control2 >> 1;
+        } else {
+            pf = control & 0b00010000;
+            nr = control >> 5;
+        }
+        if ((control & 0b0000001) == 0b0) {
+            uint8_t ns;
+            if (conn_is_extended(conn)) {
+                ns = control >> 1;
+            } else {
+                ns = (control >> 1) & 0b00001110;
+            }
+            i_frame(type, ns, pf, nr, &pkt[offset], pktlen - offset, address, address_count);
+        }
+        else if ((control & 0b00000011) == 0b01) {
+            uint8_t s;
+            s = (control >> 2) & 0b00001100;
+            s_frame(type, nr, &pkt[offset], pktlen - offset, address, address_count);
+        } else
+            CHECK(!"can't happen");
+    }
 
     return;
 }
+
+void ax25_recv(uint8_t port, uint8_t pkt[], size_t pktlen) {
+    ax25_recv_ackmode(port, 0, pkt, pktlen);
+}
+

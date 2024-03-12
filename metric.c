@@ -22,6 +22,12 @@ static const char *metric_name[MAX_METRIC] = {
     NAME(NO_PACKETS),
     NAME(PACKETS_ALLOCATED),
     NAME(PACKETS_FREED),
+    NAME(NOT_COMMAND),
+    NAME(SABM_SUCCESS),
+    NAME(SABM_FAIL),
+    NAME(NO_CONNS),
+    NAME(KISS_XMIT),
+    NAME(KISS_XMIT_BYTES),
 #undef NAME
 };
 

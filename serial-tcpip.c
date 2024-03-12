@@ -8,23 +8,10 @@
 #include <unistd.h>
 #include <stdio.h>
 
-#define NODE "::1"
-#define SERVICE "8001"
-
 static int serial_fd = -1;
 
-void debug_putch(char ch) {
-    putchar(ch);
-}
-
-void debug(const char *msg) {
-    puts(msg);
-}
-
-void panic(const char *msg) {
-    debug(msg);
-    abort();
-}
+#define NODE "::1"
+#define SERVICE "8001"
 
 void serial_init(void) {
     int listenfd = -1;
@@ -66,7 +53,8 @@ void serial_putch(uint8_t serial, uint8_t data) {
     }
 }
 
-void serial_wait(void) {
+int main(int argc, char *argv[]) {
+    serial_init();
     for (;;) {
         uint8_t data;
         if (read(serial_fd, &data, sizeof(data)) != 1)

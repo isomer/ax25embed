@@ -4,6 +4,8 @@
 #include "metric.h"
 #include "serial.h"
 
+#undef ACKMODE
+
 enum { BUFFER_SIZE = 318, MAX_SERIAL=2 };
 enum {
     FEND = 0xC0,
@@ -165,13 +167,19 @@ uint16_t kiss_xmit(uint8_t port, uint8_t *buffer, size_t len) {
     } while (id == 0);
 
     serial_putch(port_to_serial(port), FEND);
+#ifdef ACKMODE
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_ACKMODE);
     kiss_xmit_byte(port_to_serial(port), id >> 8);
     kiss_xmit_byte(port_to_serial(port), id & 0xFF);
+#else
+    kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_DATA);
+#endif
     for (size_t i = 0; i < len; ++i) {
         kiss_xmit_byte(port_to_serial(port), buffer[i]);
     }
     serial_putch(port_to_serial(port), FEND);
+    metric_inc(METRIC_KISS_XMIT);
+    metric_inc_by(METRIC_KISS_XMIT_BYTES, len);
 
     return id;
 }

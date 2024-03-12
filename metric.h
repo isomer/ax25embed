@@ -33,6 +33,18 @@ typedef enum metric_t {
     METRIC_PACKETS_ALLOCATED,
     /* Packets freed */
     METRIC_PACKETS_FREED,
+    /* Number of packets of a type that should be a command, but were instead a response */
+    METRIC_NOT_COMMAND,
+    /* Number of received SABM packets that were successfully set up */
+    METRIC_SABM_SUCCESS,
+    /* Number of received SABM packets that were unsuccessfully set up */
+    METRIC_SABM_FAIL,
+    /* No free connection slots */
+    METRIC_NO_CONNS,
+    /* Number of kiss data frames sent */
+    METRIC_KISS_XMIT,
+    /* Number of kiss data bytes sent */
+    METRIC_KISS_XMIT_BYTES,
 	/* Not a real metric, just the last metric number, insert new metrics before here */
 	MAX_METRIC,
 } metric_t;
