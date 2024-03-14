@@ -1,3 +1,5 @@
+#ifndef PACKET_H
+#define PACKET_H 1
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
@@ -19,3 +21,4 @@ void packet_free(packet_t **packet);
 void packet_push(packet_t *packet, const void *ptr, size_t ptrlen);
 void packet_push_byte(packet_t *packet, uint8_t byte);
 
+#endif

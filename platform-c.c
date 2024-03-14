@@ -17,3 +17,19 @@ void panic(const char *msg) {
     abort();
 }
 
+void debug_internal_x8(struct debug_t *v) {
+    printf("%x", v->u8);
+}
+
+void debug_internal_d8(struct debug_t *v) {
+    printf("%d", v->u8);
+}
+
+void debug_internal_str(struct debug_t *v) {
+    printf("%s", (const char *)v->ptr);
+}
+
+void debug_internal_eol(void) {
+    putchar('\n');
+    fflush(stdout);
+}

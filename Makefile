@@ -1,6 +1,15 @@
 CFLAGS= -g -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
-LIB=kiss.o metric.o ax25.o packet.o
+LIB= \
+	 ax25_dl.o \
+	 ax25.o \
+	 buffer.o \
+	 connection.o \
+	 kiss.o \
+	 metric.o \
+	 packet.o \
+	 ssid.o \
+
 PLATFORM?=platform-c.o
 
 all: serial-tcpip serial-tty

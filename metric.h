@@ -45,6 +45,9 @@ typedef enum metric_t {
     METRIC_KISS_XMIT,
     /* Number of kiss data bytes sent */
     METRIC_KISS_XMIT_BYTES,
+    METRIC_BUFFER_ALLOC_SUCCESS,
+    METRIC_BUFFER_ALLOC_FAIL,
+    METRIC_BUFFER_FREE,
 	/* Not a real metric, just the last metric number, insert new metrics before here */
 	MAX_METRIC,
 } metric_t;
