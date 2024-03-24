@@ -3,6 +3,8 @@
  *
  * Definitions for AX.25 DataLink layer.
  */
+#ifndef AX25_DL_H
+#define AX25_DL_H
 #include "connection.h"
 #include "ssid.h"
 #include <stdint.h>
@@ -91,7 +93,7 @@ typedef struct ax25_dl_event_t {
     type_t type; /* Command / Response / Other */
     uint8_t nr;
     uint8_t ns;
-    uint8_t *info;
+    const uint8_t *info;
     uint8_t info_len;
     bool p;
     bool f;
@@ -108,7 +110,7 @@ typedef struct dl_socket_t {
     void *userdata;
     void (*on_connect)(struct dl_socket_t *);
     void (*on_error)(struct dl_socket_t *, ax25_dl_error_t err);
-    void (*on_data)(struct dl_socket_t *, uint8_t *data, size_t datalen);
+    void (*on_data)(struct dl_socket_t *, const uint8_t *data, size_t datalen);
     void (*on_disconnect)(struct dl_socket_t *);
 } dl_socket_t;
 
@@ -116,4 +118,6 @@ extern dl_socket_t listen_socket;
 
 /** Create a new connection to remote, from local, on port port */
 dl_socket_t *dl_connect(ssid_t *remote, ssid_t *local, uint8_t port);
-void dl_send(dl_socket_t *sock, void *data, size_t datalen);
+void dl_send(dl_socket_t *sock, const void *data, size_t datalen);
+
+#endif

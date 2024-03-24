@@ -20,6 +20,28 @@ static const ssid_t ssid_my_addr = { .ssid = {
     SSID,
 } };
 
+bool ssid_from_string(const char *str, ssid_t *ssid) {
+    ssid->ssid[SSID_LEN-1] = '\x00';
+
+    for(size_t i = 0; i < SSID_LEN-1; ++i) {
+        switch (str[i]) {
+            case '-':
+                ssid->ssid[SSID_LEN-1] = str[i+1] - '0';
+                /* fall through */
+            case '\0':
+                /* pad string with NULs */
+                for( ; i < SSID_LEN-1; ++i) {
+                    ssid->ssid[i] = ' ';
+                }
+                return true;
+            default:
+                ssid->ssid[i] = str[i];
+                break;
+        }
+    }
+    return true;
+}
+
 bool ssid_parse(const uint8_t buffer[static SSID_LEN], ssid_t *ssid) {
     /* Verify all the low bits are 0, but ignore the low bit of the ssid */
     if (((buffer[0] | buffer[1] | buffer[2] | buffer[3] | buffer[4] | buffer[5]) & 0x01) != 0x00)

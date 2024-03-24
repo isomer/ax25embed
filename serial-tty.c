@@ -19,61 +19,12 @@
 #include <unistd.h>
 
 
-#define NODE "::1"
-#define SERVICE "8001"
-
 static int serial_fd = -1;
 
-static void serial_init_internal(void) {
-    int master_fd;
-
-    int four = 4; // This value appears unused in the kernel?
-    int kiss = N_AX25;
-    char call[7] = "2E0ITB\x00";
-    struct ifreq ifr;
-
-    if (openpty(&master_fd, &serial_fd, NULL, NULL, NULL) == -1)
-        panic("openpty failed");
-
-    if (ioctl(master_fd, TIOCSETD, &kiss) == -1)
-        panic("ioctl(TIOCSETD)");
-
-    for(size_t i=0; i<sizeof(call); ++i)
-        call[i] <<= 1;
-
-    if (ioctl(master_fd, SIOCSIFHWADDR, call) == -1)
-        panic("ioctl(SIOCSIFHWADDR)");
-
-    if (ioctl(master_fd, SIOCSIFENCAP, &four) == -1)
-        panic("ioctl(SIOCSIFENCAP)");
-
-    if (ioctl(master_fd, SIOCGIFNAME, ifr.ifr_name) == -1)
-        panic("ioctl(SIOCGIFNAME)");
-
-    int fd = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (fd == -1)
-        panic("socket(AF_UNIX)");
-
-    if (ioctl(fd, SIOCGIFFLAGS, &ifr) == -1)
-        panic("ioctl(SIOCGIFLAGS)");
-
-    ifr.ifr_flags |= IFF_UP | IFF_RUNNING | IFF_NOARP;
-    ifr.ifr_flags &= ~IFF_BROADCAST;
-
-    if (ioctl(fd, SIOCSIFFLAGS, &ifr) == -1)
-        panic("ioctl(SIOCSIFLAGS)");
-
-    close(fd);
-}
-
-static void serial_init_external(const char *tty) {
+static void setup_serial(int fd) {
     struct termios tbuf;
 
-    serial_fd = open(tty, O_RDWR);
-    if (serial_fd == -1)
-        panic("failed to open port");
-
-    if (tcgetattr(serial_fd, &tbuf) == -1) {
+    if (tcgetattr(fd, &tbuf) == -1) {
         panic("tcgetattr");
     }
     //tbuf.c_oflag &= ~OPOST; /* disable output postprocessing */
@@ -96,9 +47,32 @@ static void serial_init_external(const char *tty) {
     tbuf.c_cflag |= CS8;
 
 
-    if (tcsetattr(serial_fd, TCSANOW, &tbuf) == -1) {
+    if (tcsetattr(fd, TCSANOW, &tbuf) == -1) {
         panic("tcsetattr");
     }
+}
+
+static void serial_init_internal(void) {
+    int other_fd;
+    char other_name[1024];
+
+    if (openpty(&serial_fd, &other_fd, NULL, NULL, NULL) == -1)
+        panic("openpty failed");
+
+    if (ttyname_r(other_fd, other_name, sizeof(other_name)) == -1)
+        panic("failed to get ttyname");
+
+    DEBUG(STR("terminal: "), STR(other_name));
+
+    setup_serial(serial_fd);
+}
+
+static void serial_init_external(const char *tty) {
+    serial_fd = open(tty, O_RDWR);
+    if (serial_fd == -1)
+        panic("failed to open port");
+
+    setup_serial(serial_fd);
 }
 
 void serial_putch(uint8_t serial, uint8_t data) {
@@ -108,46 +82,15 @@ void serial_putch(uint8_t serial, uint8_t data) {
     }
 }
 
-static void soc_error(dl_socket_t *sock, ax25_dl_error_t err) {
-    (void) sock;
-    DEBUG(STR("Got error="), STR(ax25_dl_strerror(err)));
-}
-
-static void soc_data(dl_socket_t *sock, uint8_t *data, size_t datalen) {
-    (void) sock;
-    (void) data;
-    (void) datalen;
-    DEBUG(STR("Got data, len="), D8(datalen));
-    for(size_t i = 0; i < datalen; ++i) {
-        if ((data[i] >= 'A' && data[i] <= 'Z') || (data[i] >= 'a' && data[i] <= 'z')) {
-            data[i] ^= ('a' - 'A');
-        }
-    }
-    dl_send(sock, data, datalen);
-}
-
-static void soc_disconnect(dl_socket_t *sock) {
-    (void) sock;
-    DEBUG(STR("disconnect"));
-}
-
-static void soc_connect(dl_socket_t *sock) {
-    DEBUG(STR("connected"));
-    sock->on_error = soc_error;
-    sock->on_data = soc_data;
-    sock->on_disconnect = soc_disconnect;
-}
-
-
-int main(int argc, char *argv[]) {
-    debug("Initializing");
+void serial_init(int argc, char *argv[]) {
     if (argc > 1) {
         serial_init_external(argv[1]);
     } else {
         serial_init_internal();
     }
-    listen_socket.on_connect = soc_connect;
-    debug("Running");
+}
+
+void serial_wait(void) {
     for (;;) {
         uint8_t data;
         fd_set rfd;

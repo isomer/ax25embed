@@ -12,11 +12,12 @@ LIB= \
 	 time.o \
 
 PLATFORM?=platform-posix.o
+SERIAL?=serial-tty.o
 
-all: serial-tcpip serial-tty
+all: app-caseflip app-greet
 
-serial-tcpip: serial-tcpip.o libax25embed.a($(LIB)) $(PLATFORM)
-serial-tty: serial-tty.o libax25embed.a($(LIB)) $(PLATFORM)
+app-caseflip: app-caseflip.o libax25embed.a($(LIB)) $(PLATFORM) $(SERIAL)
+app-greet: app-greet.o libax25embed.a($(LIB)) $(PLATFORM) $(SERIAL)
 
 clean:
-	rm -f *.o *.a serial-tcpip serial-tty
+	rm -f *.o *.a app-caseflip app-greet

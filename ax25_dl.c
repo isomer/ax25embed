@@ -256,12 +256,12 @@ static void dl_error(ax25_dl_event_t *ev, ax25_dl_error_t err) {
         ev->conn->socket->on_error(ev->conn->socket, err);
 }
 
-static void dl_data_indication(ax25_dl_event_t *ev, uint8_t *data, size_t datalen) {
+static void dl_data_indication(ax25_dl_event_t *ev, const uint8_t *data, size_t datalen) {
     if (ev->conn->socket->on_data)
         ev->conn->socket->on_data(ev->conn->socket, data, datalen);
 }
 
-static void dl_unit_data_indication(ax25_dl_event_t *ev, uint8_t *data, size_t datalen) {
+static void dl_unit_data_indication(ax25_dl_event_t *ev, const uint8_t *data, size_t datalen) {
     (void) ev;
     /* unconnected data appears on the listen socket */
     listen_socket.on_data(&listen_socket, data, datalen);
@@ -285,11 +285,12 @@ dl_socket_t *dl_connect(ssid_t *remote, ssid_t *local, uint8_t port) {
     ev.address[ADDR_DST] = *local;
     ev.address[ADDR_SRC] = *remote;
     ev.port = port;
+    ev.conn = NULL;
     ax25_dl_event(&ev);
     return ev.conn ? socket_allocate(ev.conn) : NULL;
 }
 
-void dl_send(dl_socket_t *sock, void *data, size_t datalen) {
+void dl_send(dl_socket_t *sock, const void *data, size_t datalen) {
     ax25_dl_event_t ev;
     ev.event = EV_DL_DATA;
     ev.conn = sock->conn;

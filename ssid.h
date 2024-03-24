@@ -18,8 +18,13 @@ typedef struct ssid_t {
     char ssid[SSID_LEN];
 } ssid_t;
 
+/** parse an ssid from a string */
+bool ssid_from_string(const char *str, ssid_t *ssid);
+/** parse an ssid in ax.25 packet format. */
 bool ssid_parse(const uint8_t buffer[static SSID_LEN], ssid_t *ssid);
+/** output an ssid to the debug port */
 void ssid_debug(const ssid_t *ssid);
+/** write an ssid to a packet in ax.25 packet format. */
 bool ssid_push(packet_t *packet, const ssid_t *ssid);
 bool ssid_cmp(const ssid_t *lhs, const ssid_t *rhs);
 bool ssid_is_mine(const ssid_t *ssid);
