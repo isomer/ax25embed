@@ -1,4 +1,8 @@
-/* additional platform apis that rely on posix */
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * additional platform apis that rely on posix
+ */
 #include "platform.h"
 #include "time.h"
 #include <time.h>

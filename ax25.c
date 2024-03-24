@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * AX.25 Framing code.
+ */
 #include "ax25.h"
 #include "ax25_dl.h"
 #include "connection.h"

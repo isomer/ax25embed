@@ -1,4 +1,7 @@
-/* Based on AX.25 v2.2 (https://www.tapr.org/pdf/AX25.2.2.pdf)
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Based on AX.25 v2.2 (https://www.tapr.org/pdf/AX25.2.2.pdf)
  *
  * This is currently as literal translation of the SDL as I can possibly make it.
  *

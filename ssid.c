@@ -1,3 +1,10 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Implementation of parsing/serialising/comparing SSIDs.
+ *
+ */
+
 #include "ax25_dl.h"
 #include "platform.h"
 #include <string.h> // For memcmp

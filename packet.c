@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Allocates / deallocates buffers.
+ */
 #include "packet.h"
 #include "metric.h"
 #include "platform.h"

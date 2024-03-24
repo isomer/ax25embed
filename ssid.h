@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * API for dealing with SSIDs, including parsing and encoding.
+ */
 #ifndef SSID_H
 #define SSID_H 1
 #include "packet.h"

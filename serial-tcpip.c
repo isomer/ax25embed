@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * A platform that listens on a TCP/IP port.
+ */
 #include "platform.h"
 #include "kiss.h"
 #include "serial.h"

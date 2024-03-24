@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Definitions for connection table.
+ */
 #include "connection.h"
 #include "ax25_dl.h"
 #include "metric.h"
@@ -39,6 +44,7 @@ connection_t *conn_find_or_create(ssid_t *local, ssid_t *remote, uint8_t port) {
     }
     if (conn) {
         /* Initialise the structure */
+        /* TODO: should probably initialise more of this */
         conn->port = port;
         conn->local = *local;
         conn->remote = *remote;

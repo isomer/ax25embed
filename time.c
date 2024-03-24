@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Implementations of helper functions for dealing with time, including instants and durations.
+ */
 #include "time.h"
 
 const instant_t INSTANT_ZERO = { .instant = 0 };

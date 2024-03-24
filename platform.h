@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Platform specific code.
+ */
 #ifndef PLATFORM_H
 #define PLATFORM_H
 #include <stdint.h>
@@ -39,9 +44,8 @@ void debug_internal_eol(void);
 
 /* How to use this macro, give it up to 6 arguments.  each argument must be a
  * macro saying the type of argument and it's value.  This should be type safe
- * (if not a bit ugly).  Convention for integers is "D" for decimal output, "X"
- * for "hex" output, optionally followed by "U" for unsigned, then the
- * bitwidth.
+ * (if a bit ugly).  Convention for integers is "D" for decimal output, "X" for
+ * "hex" output, optionally followed by "U" for unsigned, then the bitwidth.
  *
  * eg: DEBUG(STR("The count is"), DU8(count));
  */

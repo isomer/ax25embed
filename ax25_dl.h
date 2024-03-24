@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Definitions for AX.25 DataLink layer.
+ */
 #include "connection.h"
 #include "ssid.h"
 #include <stdint.h>

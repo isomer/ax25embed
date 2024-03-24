@@ -1,4 +1,8 @@
-/* Plaform using the generic C apis */
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Plaform using the generic C apis
+ */
 #include "platform.h"
 #include "kiss.h"
 #include "serial.h"

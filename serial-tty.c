@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * A platform that speaks over a Unix TTY.
+ */
 #include "platform.h"
 #include "connection.h"
 #include "kiss.h"

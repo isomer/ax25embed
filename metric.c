@@ -1,3 +1,10 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Metrics.
+ *
+ * Metrics are counters that can be used to see how many times a particular event occurs.
+ */
 #include "metric.h"
 #include "platform.h"
 #include <stdint.h>

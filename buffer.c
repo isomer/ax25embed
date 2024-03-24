@@ -1,3 +1,8 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * Implementation of buffer pool.
+ */
 #include "buffer.h"
 #include "metric.h"
 #include "platform.h"
@@ -5,6 +10,11 @@
 
 enum { MAX_BUFFERS = 20, };
 
+/* TODO: Instead of always using the largest buffer size, we should have
+ * multiple bufferpools, eg: one at 2048 bytes, one at 512 bytes, one at 128
+ * bytes.  Try and allocate from the smallest buffer that will fit, otherwise
+ * try the next largest etc.
+ */
 static buffer_t bufferpool[MAX_BUFFERS] = { { .in_use = false }, };
 
 buffer_t *buffer_allocate(const uint8_t *src, size_t len) {

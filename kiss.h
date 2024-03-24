@@ -1,6 +1,13 @@
+/* (C) Copyright 2024 Perry Lorier (2E0ITB)
+ * SPDX-License-Identifier: GPL-3.0-or-later
+ *
+ * KISS driver
+ */
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
+
+/* High nibble of port is which physical port to use, low nibble is which device on the port to use. */
 
 /* Receive one byte */
 void kiss_recv_byte(uint8_t serial, uint8_t byte);
