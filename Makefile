@@ -11,12 +11,12 @@ LIB= \
 	 ssid.o \
 	 time.o \
 
-PLATFORM?=platform-c.o platform-posix.o
+PLATFORM?=platform-posix.o
 
 all: serial-tcpip serial-tty
 
-serial-tcpip: serial-tcpip.o $(LIB) $(PLATFORM)
-serial-tty: serial-tty.o $(LIB) $(PLATFORM)
+serial-tcpip: serial-tcpip.o libax25embed.a($(LIB)) $(PLATFORM)
+serial-tty: serial-tty.o libax25embed.a($(LIB)) $(PLATFORM)
 
 clean:
 	rm -f *.o *.a serial-tcpip serial-tty
