@@ -29,11 +29,11 @@
  */
 #include "ax25_dl.h"
 #include "ax25.h"
+#include "config.h"
 #include "buffer.h"
 #include "kiss.h"
 #include "platform.h"
 
-enum { MAX_SOCKETS = 16 };
 static dl_socket_t dl_sockets[MAX_SOCKETS];
 
 dl_socket_t listen_socket = {

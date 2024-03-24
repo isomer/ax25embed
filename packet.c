@@ -4,13 +4,10 @@
  * Allocates / deallocates buffers.
  */
 #include "packet.h"
+#include "config.h"
 #include "metric.h"
 #include "platform.h"
 #include <string.h> // for memcpy
-
-enum {
-    MAX_PACKETS = 8,
-};
 
 static packet_t packets[MAX_PACKETS];
 static size_t packet_next = 0;

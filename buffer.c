@@ -4,11 +4,10 @@
  * Implementation of buffer pool.
  */
 #include "buffer.h"
+#include "config.h"
 #include "metric.h"
 #include "platform.h"
 #include <string.h> // for memcpy
-
-enum { MAX_BUFFERS = 20, };
 
 /* TODO: Instead of always using the largest buffer size, we should have
  * multiple bufferpools, eg: one at 2048 bytes, one at 512 bytes, one at 128

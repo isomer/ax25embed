@@ -4,10 +4,9 @@
  * Definitions for connection table.
  */
 #include "connection.h"
+#include "config.h"
 #include "ax25_dl.h"
 #include "metric.h"
-
-enum { MAX_CONN = 8 };
 
 static connection_t conntbl[MAX_CONN] = { { .state = STATE_DISCONNECTED, }, };
 

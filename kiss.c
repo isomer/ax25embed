@@ -5,13 +5,13 @@
  */
 #include "kiss.h"
 #include "ax25.h"
-#include "platform.h"
+#include "config.h"
 #include "metric.h"
+#include "platform.h"
 #include "serial.h"
 
 #undef ACKMODE
 
-enum { BUFFER_SIZE = 318, MAX_SERIAL=2 };
 enum {
     FEND = 0xC0,
     FESC = 0xDB,

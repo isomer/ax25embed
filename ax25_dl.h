@@ -9,8 +9,6 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-enum { T3_DURATION_MINUTES = 15 };
-
 enum {
     ADDR_DST = 0,
     ADDR_SRC = 1,

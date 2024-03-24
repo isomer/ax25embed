@@ -5,13 +5,13 @@
  */
 #ifndef SSID_H
 #define SSID_H 1
+#include "config.h"
 #include "packet.h"
 #include <stdint.h>
 #include <stdbool.h>
 
 enum {
     SSID_LEN = 7,
-    MAX_ADDRESSES = 4,
 };
 
 typedef struct ssid_t {

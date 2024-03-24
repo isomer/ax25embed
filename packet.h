@@ -5,13 +5,10 @@
  */
 #ifndef PACKET_H
 #define PACKET_H 1
+#include "config.h"
 #include <stdbool.h>
 #include <stdint.h>
 #include <stddef.h>
-
-enum {
-    MAX_PACKET_SIZE = 2048,
-};
 
 typedef struct packet_t {
     struct packet_t *next;

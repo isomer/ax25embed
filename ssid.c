@@ -6,10 +6,19 @@
  */
 
 #include "ax25_dl.h"
+#include "config.h"
 #include "platform.h"
 #include <string.h> // For memcmp
 
-static const ssid_t ssid_my_addr = { .ssid = {'M', '7', 'E', 'P', 'L', ' ', 0 } };
+static const ssid_t ssid_my_addr = { .ssid = {
+    CALLSIGN[0],
+    CALLSIGN[1],
+    CALLSIGN[2],
+    CALLSIGN[3],
+    CALLSIGN[4],
+    CALLSIGN[5],
+    SSID,
+} };
 
 bool ssid_parse(const uint8_t buffer[static SSID_LEN], ssid_t *ssid) {
     /* Verify all the low bits are 0, but ignore the low bit of the ssid */
