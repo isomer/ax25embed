@@ -55,7 +55,7 @@ static uint8_t serial_unit_to_port(uint8_t serial, uint8_t port) {
 
 static void kiss_recv(uint8_t serial) {
     if (buffer_len[serial] < 1) {
-        /* Ignore zero length frames */
+        /* Ignore zero length frames - they're padding */
         return;
     }
     switch (buffer[serial][0] & 0x0F) {
@@ -95,6 +95,7 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte) {
             switch (byte) {
                 case FEND:
                     kiss_recv(serial);
+                    buffer_len[serial] = 0;
                     kiss_state[serial] = STATE_DATA;
                     break;
                 case FESC:
@@ -130,13 +131,11 @@ void kiss_recv_byte(uint8_t serial, uint8_t byte) {
                     }
                     break;
                 default:
-                    /* The spec says "Receipt of any
-                     * character other than TFESC or TFEND
-                     * while in escaped mode is an error;
-                     * no action is taken and frame
-                     * assembly continues.", although I'd
-                     * be include to discard the frame and
-                     * transition into STATE_WAIT */
+                    /* The spec says "Receipt of any character other than TFESC
+                     * or TFEND while in escaped mode is an error; no action is
+                     * taken and frame assembly continues.", although I'd be
+                     * inclined to discard the frame and transition into
+                     * STATE_WAIT */
                     kiss_state[serial] = STATE_DATA;
                     metric_inc(METRIC_BAD_ESCAPE);
                     break;

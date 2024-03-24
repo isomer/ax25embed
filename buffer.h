@@ -5,8 +5,9 @@
 
 typedef struct buffer_t {
     bool in_use;
-    char buffer[MAX_PACKET_SIZE];
+    uint8_t buffer[MAX_PACKET_SIZE];
     size_t len;
+    struct buffer_t *next;
 } buffer_t;
 
 buffer_t *buffer_allocate(const uint8_t *src, size_t len);

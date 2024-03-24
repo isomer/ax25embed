@@ -2,7 +2,7 @@
 #include "platform.h"
 #include <string.h> // For memcmp
 
-static const ssid_t ssid_my_addr = { .ssid = {'M', '7', 'Q', 'Q', 'Q', ' ', 0 } };
+static const ssid_t ssid_my_addr = { .ssid = {'M', '7', 'E', 'P', 'L', ' ', 0 } };
 
 bool ssid_parse(const uint8_t buffer[static SSID_LEN], ssid_t *ssid) {
     /* Verify all the low bits are 0, but ignore the low bit of the ssid */

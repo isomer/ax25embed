@@ -1,4 +1,4 @@
-CFLAGS= -g -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes
+CFLAGS= -Og -g -Wall -Wextra -Wmissing-prototypes -Wstrict-prototypes
 
 LIB= \
 	 ax25_dl.o \
@@ -9,8 +9,9 @@ LIB= \
 	 metric.o \
 	 packet.o \
 	 ssid.o \
+	 time.o \
 
-PLATFORM?=platform-c.o
+PLATFORM?=platform-c.o platform-posix.o
 
 all: serial-tcpip serial-tty
 
@@ -18,4 +19,4 @@ serial-tcpip: serial-tcpip.o $(LIB) $(PLATFORM)
 serial-tty: serial-tty.o $(LIB) $(PLATFORM)
 
 clean:
-	rm -f *.o *.a
+	rm -f *.o *.a serial-tcpip serial-tty

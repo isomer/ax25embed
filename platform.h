@@ -2,13 +2,11 @@
 #define PLATFORM_H
 #include <stdint.h>
 
-#define MICROS(x) ((x)/10)
-
 __attribute__((noreturn)) void panic(const char *dbg_msg);
 void debug(const char *dbg_msg);
 void debug_putch(char ch);
 
-#define CHECK(cond) do { if (!(cond)) panic(#cond); } while(0)
+#define CHECK(cond) do { if (!(cond)) panic("CHECK failure: " #cond); } while(0)
 
 struct debug_t {
     void (*fmt)(struct debug_t *self);
@@ -51,6 +49,12 @@ void debug_internal_eol(void);
     do { \
         DEBUG_COUNT_ARGS(__VA_ARGS__, DEBUG6, DEBUG5, DEBUG4, DEBUG3, DEBUG2, DEBUG1)(__VA_ARGS__); \
         debug_internal_eol(); \
+    } while(0)
+
+#define UNIMPLEMENTED() \
+    do { \
+        DEBUG(STR("unimplemented: "), STR(__func__)); \
+        panic("not continuing"); \
     } while(0)
 
 #endif

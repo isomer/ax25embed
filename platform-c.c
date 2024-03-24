@@ -1,6 +1,8 @@
+/* Plaform using the generic C apis */
 #include "platform.h"
 #include "kiss.h"
 #include "serial.h"
+#include "time.h"
 #include <stdlib.h>
 #include <stdio.h>
 

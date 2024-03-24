@@ -13,6 +13,7 @@ buffer_t *buffer_allocate(const uint8_t *src, size_t len) {
         if (!bufferpool[i].in_use) {
             bufferpool[i].in_use = true;
             bufferpool[i].len = len;
+            bufferpool[i].next = NULL;
             memcpy(bufferpool[i].buffer, src, len);
             metric_inc(METRIC_BUFFER_ALLOC_SUCCESS);
             return &bufferpool[i];

@@ -28,6 +28,9 @@ static const char *metric_name[MAX_METRIC] = {
     NAME(NO_CONNS),
     NAME(KISS_XMIT),
     NAME(KISS_XMIT_BYTES),
+    NAME(BUFFER_ALLOC_SUCCESS),
+    NAME(BUFFER_ALLOC_FAIL),
+    NAME(BUFFER_FREE),
 #undef NAME
 };
 
@@ -39,6 +42,5 @@ void metric_inc(metric_t metric) {
 void metric_inc_by(metric_t metric, size_t count) {
     if (metric < 0 || metric >= MAX_METRIC)
         panic("metric out of range");
-    debug(metric_name[metric]);
     metrics[metric] += count;
 }

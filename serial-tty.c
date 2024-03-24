@@ -1,6 +1,8 @@
 #include "platform.h"
+#include "connection.h"
 #include "kiss.h"
 #include "serial.h"
+#include "ax25_dl.h"
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <net/if.h>
@@ -69,10 +71,25 @@ static void serial_init_external(const char *tty) {
     if (tcgetattr(serial_fd, &tbuf) == -1) {
         panic("tcgetattr");
     }
-    tbuf.c_oflag &= ~OPOST; /* disable output postprocessing */
-    tbuf.c_lflag &= ~(ICANON | ISIG | ECHO); /* disable input canonicalisation, signal processing, local echo */
+    //tbuf.c_oflag &= ~OPOST; /* disable output postprocessing */
+    //tbuf.c_lflag &= ~(ICANON | ISIG | ECHO); /* disable input canonicalisation, signal processing, local echo */
     tbuf.c_cc[VMIN] = 1; /* allow byte by byte */
     tbuf.c_cc[VTIME] = 0; /* don't delay */
+
+    tbuf.c_iflag &= ~(IGNBRK /* Ignore Break */
+            | BRKINT /* Break interrupts */
+            | PARMRK /* Mark parity errors */
+            | ISTRIP /* Strip off 8th bit */
+            | INLCR /* Translate NL to CR on input */
+            | IGNCR /* Ignore input CR */
+            | ICRNL
+            | IXON /* Input XON/XOFF processing on output */
+            );
+    tbuf.c_oflag &= ~OPOST /* Disable post processing */;
+    tbuf.c_lflag &= ~(ECHO | ECHONL | ICANON | ISIG | IEXTEN);
+    tbuf.c_cflag &= ~(CSIZE | PARENB);
+    tbuf.c_cflag |= CS8;
+
 
     if (tcsetattr(serial_fd, TCSANOW, &tbuf) == -1) {
         panic("tcsetattr");
@@ -86,6 +103,37 @@ void serial_putch(uint8_t serial, uint8_t data) {
     }
 }
 
+static void soc_error(dl_socket_t *sock, ax25_dl_error_t err) {
+    (void) sock;
+    DEBUG(STR("Got error="), STR(ax25_dl_strerror(err)));
+}
+
+static void soc_data(dl_socket_t *sock, uint8_t *data, size_t datalen) {
+    (void) sock;
+    (void) data;
+    (void) datalen;
+    DEBUG(STR("Got data, len="), D8(datalen));
+    for(size_t i = 0; i < datalen; ++i) {
+        if ((data[i] >= 'A' && data[i] <= 'Z') || (data[i] >= 'a' && data[i] <= 'z')) {
+            data[i] ^= ('a' - 'A');
+        }
+    }
+    dl_send(sock, data, datalen);
+}
+
+static void soc_disconnect(dl_socket_t *sock) {
+    (void) sock;
+    DEBUG(STR("disconnect"));
+}
+
+static void soc_connect(dl_socket_t *sock) {
+    DEBUG(STR("connected"));
+    sock->on_error = soc_error;
+    sock->on_data = soc_data;
+    sock->on_disconnect = soc_disconnect;
+}
+
+
 int main(int argc, char *argv[]) {
     debug("Initializing");
     if (argc > 1) {
@@ -93,12 +141,22 @@ int main(int argc, char *argv[]) {
     } else {
         serial_init_internal();
     }
+    listen_socket.on_connect = soc_connect;
     debug("Running");
     for (;;) {
         uint8_t data;
-        if (read(serial_fd, &data, sizeof(data)) != 1)
-            panic("cannot read");
-        kiss_recv_byte(0, data);
+        fd_set rfd;
+        FD_ZERO(&rfd);
+        FD_SET(serial_fd, &rfd);
+        struct timeval timeout = { .tv_sec = 0, .tv_usec = 10000, };
+        select(serial_fd+1, &rfd, NULL, NULL, &timeout);
+        if (FD_ISSET(serial_fd, &rfd)) {
+            if (read(serial_fd, &data, sizeof(data)) != 1)
+                panic("cannot read");
+            kiss_recv_byte(0, data);
+        }
+        conn_expire_timers();
+        conn_dequeue();
     }
 }
 
