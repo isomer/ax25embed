@@ -10,15 +10,7 @@
 #include "platform.h"
 #include <string.h> // For memcmp
 
-static const ssid_t ssid_my_addr = { .ssid = {
-    CALLSIGN[0],
-    CALLSIGN[1],
-    CALLSIGN[2],
-    CALLSIGN[3],
-    CALLSIGN[4],
-    CALLSIGN[5],
-    SSID,
-} };
+static ssid_t ssid_my_addr;
 
 bool ssid_from_string(const char *str, ssid_t *ssid) {
     ssid->ssid[SSID_LEN-1] = '\x00';
@@ -82,3 +74,6 @@ bool ssid_is_mine(const ssid_t *ssid) {
     return ssid_cmp(ssid, &ssid_my_addr) == 0;
 }
 
+void ssid_set_local(const ssid_t *ssid) {
+    ssid_my_addr = *ssid;
+}

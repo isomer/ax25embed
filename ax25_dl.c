@@ -10,6 +10,7 @@
  *  - The SDL talks about "TIV" and "Next T1 value" but they are both actually "T1V"
  *  - The SDL says "last T1 value * 2 ** (RC+1) * SRTT" but it actually means "T1V = 2 ** (RC+1) * SRTT"
  *  - The SDL says "set version 2.0" and "set version 2.2" but those should be shown as function calls.
+ *  - Why do the "set version" functions set T2 to 3s?
  *  - Figure C4.1 is blank, and would be really useful.
  *  - In section C4.3, it lists states 0..4, then immediately lists errors for
  *    state 5 (and defines state 5 in the SDL)
@@ -368,6 +369,14 @@ static bool timer_expired_t1(ax25_dl_event_t *ev) {
     return instant_cmp(ev->conn->t1_expiry, instant_now()) > 0;
 }
 
+static void timer_start_t2(ax25_dl_event_t *ev) {
+    ev->conn->t2_expiry = instant_add(instant_now(), ev->conn->t2);
+}
+
+static void timer_stop_t2(ax25_dl_event_t *ev) {
+    ev->conn->t2_expiry = INSTANT_ZERO;
+}
+
 static void timer_start_t3(ax25_dl_event_t *ev) {
     ev->conn->t3_expiry = instant_add(instant_now(), duration_minutes(T3_DURATION_MINUTES));
 }
@@ -409,6 +418,7 @@ static void transmit_inquiry(ax25_dl_event_t *ev) {
     }
     ev->conn->ack_pending = false;
     timer_start_t1(ev);
+    timer_stop_t2(ev);
 }
 
 static void enquiry_response(ax25_dl_event_t *ev, bool f) {
@@ -419,6 +429,7 @@ static void enquiry_response(ax25_dl_event_t *ev, bool f) {
         send_rr(ev, TYPE_RES, f);
     }
     ev->conn->ack_pending = false;
+    timer_stop_t2(ev);
 }
 
 static void invoke_retransmission(ax25_dl_event_t *ev) {
@@ -453,6 +464,7 @@ static void check_i_frame_acked(ax25_dl_event_t *ev) {
     } else if (ev->nr == ev->conn->snd_state) {
         ev->conn->ack_state = ev->nr;
         timer_stop_t1(ev);
+        timer_stop_t2(ev);
         timer_stop_t3(ev);
         select_t1(ev);
     } else if (ev->nr != ev->conn->ack_state) {
@@ -575,7 +587,7 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
          case EV_TIMER_EXPIRE_T1:
          case EV_TIMER_EXPIRE_T3:
          case EV_LM_DATA:
-         case EV_LM_SIEZE:
+         case EV_TIMER_EXPIRE_T2:
             break;
 
          case EV_DL_CONNECT:
@@ -699,7 +711,7 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
          case EV_SREJ:
          case EV_FRMR:
          case EV_LM_DATA:
-         case EV_LM_SIEZE:
+         case EV_TIMER_EXPIRE_T2:
             break;
 
          case EV_DM:
@@ -723,6 +735,7 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
                         dl_disconnect_indication(ev);
                     }
                     timer_stop_t1(ev);
+                    timer_stop_t2(ev);
                     timer_stop_t3(ev);
                     ev->conn->snd_state = ev->conn->ack_state = ev->conn->rcv_state = 0;
                     select_t1(ev);
@@ -769,6 +782,7 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
         case EV_DL_DISCONNECT:
             send_dm(ev, false, /* expedited= */ true);
             timer_stop_t1(ev);
+            timer_stop_t2(ev);
             set_state(ev->conn, STATE_DISCONNECTED);
             break;
         case EV_SABM:
@@ -818,7 +832,7 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
         case EV_SABME:
         case EV_FRMR:
         case EV_LM_DATA:
-        case EV_LM_SIEZE:
+        case EV_TIMER_EXPIRE_T2:
             break;
 
         case EV_UA:
@@ -921,6 +935,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
                 ev->conn->snd_state = (ev->conn->snd_state + 1) % ev->conn->modulo;
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 if (timer_running_t1(ev)) {
                     timer_stop_t3(ev);
                     timer_start_t1(ev);
@@ -993,6 +1008,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 ev->conn->self_busy = true;
                 send_rnr(ev, TYPE_CMD, /* f= */ false);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
             }
             break;
 
@@ -1001,6 +1017,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 ev->conn->self_busy = false;
                 send_rr(ev, TYPE_CMD, /* p= */ true);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 if (!timer_running_t1(ev)) {
                     timer_stop_t3(ev);
                     timer_start_t1(ev);
@@ -1047,9 +1064,13 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             }
             break;
 
-       case EV_LM_SIEZE:
-        /* TODO: lm-sieze confirm! */
-            UNIMPLEMENTED();
+       case EV_TIMER_EXPIRE_T2:
+            if (ev->conn->ack_pending) {
+                ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
+                enquiry_response(ev, /* f= */ false);
+            }
+            timer_stop_t2(ev);
             break;
 
        case EV_SREJ:
@@ -1114,6 +1135,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                     ev->nr = ev->conn->rcv_state;
                     send_rnr(ev, TYPE_RES, ev->f);
                     ev->conn->ack_pending = false;
+                    timer_stop_t2(ev);
                 }
                 break;
             }
@@ -1139,9 +1161,11 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                     ev->f = true;
                     send_rr(ev, TYPE_RES, ev->f);
                     ev->conn->ack_pending = false;
+                    timer_stop_t2(ev);
                 } else if (!ev->conn->ack_pending) {
-                    /* TODO: LM-Sieze request */
+                    timer_start_t2(ev);
                     ev->conn->ack_pending = true;
+                    timer_start_t2(ev);
                 }
                 break;
             }
@@ -1152,6 +1176,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                     ev->f = true;
                     send_rr(ev, TYPE_RES, ev->f);
                     ev->conn->ack_pending = false;
+                    timer_stop_t2(ev);
                 }
                 break;
             }
@@ -1163,6 +1188,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 ev->f = ev->p;
                 send_rej(ev, TYPE_RES);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 break;
             }
 
@@ -1175,6 +1201,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 ev->conn->srej_exception += 1;
                 send_srej(ev, TYPE_RES);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 break;
             }
 
@@ -1184,6 +1211,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 ev->conn->srej_exception += 1;
                 send_srej(ev, TYPE_RES);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 break;
             } else {
                 /* If there are two or more frames missing, give up and use REJ instead of SREJ (6.4.4.3) */
@@ -1192,6 +1220,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 ev->f = ev->p;
                 send_rej(ev, TYPE_RES);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 break;
             }
 
@@ -1267,6 +1296,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
 
 
             ev->conn->ack_pending = false;
+            timer_stop_t2(ev);
             ev->conn->snd_state += 1;
 
             if (!timer_running_t1(ev)) {
@@ -1399,8 +1429,13 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
             set_state(ev->conn, STATE_AWAITING_CONNECTION);
             break;
 
-        case EV_LM_SIEZE:
-            UNIMPLEMENTED();
+        case EV_TIMER_EXPIRE_T2:
+            if (ev->conn->ack_pending) {
+                ev->conn->ack_pending = false;
+                enquiry_response(ev, false);
+            }
+            timer_stop_t2(ev);
+            break;
 
         case EV_UI:
             ui_check(ev);
@@ -1470,6 +1505,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 send_rnr(ev, TYPE_CMD, false);
 
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
             }
 
             break;
@@ -1481,6 +1517,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 send_rr(ev, TYPE_CMD, true);
 
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
 
                 if (!timer_running_t1(ev)) {
                     timer_stop_t3(ev);
@@ -1559,6 +1596,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                     ev->nr = ev->conn->rcv_state;
                     send_rnr(ev, TYPE_RES, ev->f);
                     ev->conn->ack_pending = false;
+                    timer_stop_t2(ev);
                 }
                 break;
             }
@@ -1584,8 +1622,9 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                     ev->f = true;
                     send_rr(ev, TYPE_RES, ev->f);
                     ev->conn->ack_pending = false;
+                    timer_stop_t2(ev);
                 } else if (!ev->conn->ack_pending) {
-                    /* TODO: LM-Sieze request */
+                    timer_start_t2(ev);
                     ev->conn->ack_pending = true;
                 }
                 break;
@@ -1597,6 +1636,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 ev->conn->srej_exception += 1;
                 send_srej(ev, TYPE_RES);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 break;
             } else {
                 /* If there are two or more frames missing, give up and use REJ instead of SREJ (6.4.4.3) */
@@ -1605,6 +1645,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 ev->f = ev->p;
                 send_rej(ev, TYPE_RES);
                 ev->conn->ack_pending = false;
+                timer_stop_t2(ev);
                 break;
             }
     }

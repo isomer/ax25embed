@@ -62,25 +62,25 @@ typedef enum ax25_dl_event_type_t {
     EV_DL_FLOW_ON,
     EV_DL_FLOW_OFF,
     /* Received from Link Multiplexer */
-    EV_LM_SIEZE,
-    EV_LM_DATA, /* 10 */
+    EV_LM_DATA,
     /* Packets */
-    EV_UA,
+    EV_UA, /* 10 */
     EV_DM,
     EV_UI,
     EV_DISC,
-    EV_SABM, /* 15 */
-    EV_SABME,
+    EV_SABM,
+    EV_SABME, /* 15 */
     EV_TEST,
     EV_I,
     EV_RR,
-    EV_RNR, /* 20 */
-    EV_REJ,
+    EV_RNR,
+    EV_REJ, /* 20 */
     EV_SREJ,
     EV_FRMR,
     EV_UNKNOWN_FRAME,
     /* Timers */
-    EV_TIMER_EXPIRE_T1, /* 25 */
+    EV_TIMER_EXPIRE_T1,
+    EV_TIMER_EXPIRE_T2, /* 25 */
     EV_TIMER_EXPIRE_T3,
     /* Internal */
     EV_DRAIN_SENDQ,

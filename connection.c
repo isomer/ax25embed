@@ -50,6 +50,9 @@ connection_t *conn_find_or_create(ssid_t *local, ssid_t *remote, uint8_t port) {
         conn->snd_state = 0;
         conn->ack_state = 0;
         conn->rcv_state = 0;
+        conn->t1_expiry = INSTANT_ZERO;
+        conn->t2_expiry = INSTANT_ZERO;
+        conn->t3_expiry = INSTANT_ZERO;
         conn->state = STATE_DISCONNECTED;
     } else {
         /* Record that there were no more available connctions */
@@ -76,6 +79,16 @@ void conn_expire_timers(void) {
             ax25_dl_event_t ev;
             conntbl[i].t1_expiry = INSTANT_ZERO;
             ev.event = EV_TIMER_EXPIRE_T1;
+            ev.conn = &conntbl[i];
+            ev.address_count = 0;
+            ax25_dl_event(&ev);
+        }
+
+        if (instant_cmp(conntbl[i].t2_expiry, INSTANT_ZERO) != 0 &&
+                instant_cmp(conntbl[i].t2_expiry, now) <= 0) {
+            ax25_dl_event_t ev;
+            conntbl[i].t2_expiry = INSTANT_ZERO;
+            ev.event = EV_TIMER_EXPIRE_T2;
             ev.conn = &conntbl[i];
             ev.address_count = 0;
             ax25_dl_event(&ev);

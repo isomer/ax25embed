@@ -107,12 +107,14 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
 
         /* Packets can only have up to MAX_ADDRESSES addresses */
         if (ev.address_count >= MAX_ADDRESSES) {
+            DEBUG(STR("too many addresses"));
             metric_inc(METRIC_INVALID_ADDR);
             return;
         }
     }
     /* Packets need at least two addresses */
     if (ev.address_count < 2) {
+        DEBUG(STR("too few addresses"));
         metric_inc(METRIC_INVALID_ADDR);
         return;
     }
@@ -122,6 +124,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
 
     /* Don't accept packets that are not to me. */
     if (!ssid_is_mine(&ev.address[current_dst])) {
+        DEBUG(STR("not to me"));
         metric_inc(METRIC_NOT_ME);
         metric_inc_by(METRIC_NOT_ME_BYTES, pktlen);
         return;
@@ -129,6 +132,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
 
     /* Am I being asked to digipeat this packet? */
     if (current_dst != ADDR_DST) {
+        DEBUG(STR("refused digipeat"));
         metric_inc(METRIC_REFUSED_DIGIPEAT);
         return;
     }

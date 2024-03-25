@@ -6,7 +6,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define CALLSIGN "M7QQQ "
 #define SSID 0
 
 enum {

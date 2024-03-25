@@ -56,6 +56,7 @@ typedef struct connection_t {
     duration_t t1_remaining; //< time remaining when t1 was last stopped.
     duration_t t1v; //< Next value for T1; initial value is initial value of SRT
     duration_t t2;
+    instant_t t2_expiry;
     instant_t t3_expiry;
     struct dl_socket_t *socket;
 } connection_t;

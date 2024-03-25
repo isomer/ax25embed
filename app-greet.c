@@ -9,9 +9,10 @@
 #include "platform.h"
 #include "serial.h"
 
+ssid_t remote;
+ssid_t local;
+
 static const char greet_message[] = "Hello World";
-static const char greet_remote[] = "M7QQQ \x00";
-static const char greet_local[] =  "2E0ITB\x00";
 static const uint8_t greet_port = 0;
 
 static void greet_error(dl_socket_t *sock, ax25_dl_error_t err) {
@@ -36,11 +37,6 @@ static void greet_connect(dl_socket_t *sock) {
 }
 
 static void greet_init(void) {
-    ssid_t remote, local;
-    if (!ssid_from_string(greet_remote, &remote))
-        panic("invalid remote ssid");
-    if (!ssid_from_string(greet_local, &local))
-        panic("invalid local ssid");
     dl_socket_t *sock = dl_connect(&remote, &local, greet_port);
     sock->on_connect = greet_connect;
     sock->on_error = greet_error;
@@ -50,6 +46,11 @@ static void greet_init(void) {
 
 int main(int argc, char *argv[]) {
     debug("Initializing greet");
+    if (!ssid_from_string("M7QQQ-2", &local))
+        panic("can't set local callsign");
+    ssid_set_local(&local);
+    if (!ssid_from_string("M7QQQ-1", &remote))
+        panic("can't set remote callsign");
     serial_init(argc, argv);
     greet_init();
     debug("Running");
