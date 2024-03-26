@@ -163,9 +163,18 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
         }
         switch (control & 0b11101100) {
             case 0b00101100: ev.event = EV_SABM; break;
+            case 0b01101100: ev.event = EV_SABME; break;
+            case 0b01000000: ev.event = EV_DISC; break;
+            case 0b00001100: ev.event = EV_DM; break;
+            case 0b01100000: ev.event = EV_UA; break;
+            case 0b10000100: ev.event = EV_FRMR; break;
+            case 0b00000000: ev.event = EV_UI; break;
+            case 0b10101100: ev.event = EV_XID; break;
             case 0b11100000: ev.event = EV_TEST; break;
             default:
-                             ev.event = EV_UNKNOWN_FRAME; break;
+                             DEBUG(STR("Unknown uframe, control="), X8(control));
+                             ev.event = EV_UNKNOWN_FRAME;
+                             break;
         }
     } else {
         /* both S and I frames are connected, and we need to know the
@@ -194,7 +203,10 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
                     case 0b00000100: ev.event = EV_RNR; break;
                     case 0b00001000: ev.event = EV_REJ; break;
                     case 0b00001100: ev.event = EV_SREJ; break;
-                    default: ev.event = EV_UNKNOWN_FRAME; break;
+                    default:
+                                     ev.event = EV_UNKNOWN_FRAME;
+                                     DEBUG(STR("Unknown sframe, control="), X8(control16));
+                                     break;
                 }
             }
         } else {
@@ -216,7 +228,10 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
                     case 0b00000100: ev.event = EV_RNR; break;
                     case 0b00001000: ev.event = EV_REJ; break;
                     case 0b00001100: ev.event = EV_SREJ; break;
-                    default: ev.event = EV_UNKNOWN_FRAME; break;
+                    default: 
+                                     ev.event = EV_UNKNOWN_FRAME;
+                                     DEBUG(STR("Unknown sframe, control="), X8(control));
+                                     break;
                 }
             }
         }

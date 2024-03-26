@@ -77,10 +77,11 @@ typedef enum ax25_dl_event_type_t {
     EV_REJ, /* 20 */
     EV_SREJ,
     EV_FRMR,
+    EV_XID,
     EV_UNKNOWN_FRAME,
     /* Timers */
-    EV_TIMER_EXPIRE_T1,
-    EV_TIMER_EXPIRE_T2, /* 25 */
+    EV_TIMER_EXPIRE_T1, /* 25 */
+    EV_TIMER_EXPIRE_T2,
     EV_TIMER_EXPIRE_T3,
     /* Internal */
     EV_DRAIN_SENDQ,

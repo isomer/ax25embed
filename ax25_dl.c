@@ -1656,8 +1656,48 @@ static void ax25_dl_awaiting_connection_2_2(ax25_dl_event_t *ev) {
     UNIMPLEMENTED();
 }
 
+static const char *ax25_dl_eventmsg[] = {
+   [EV_CTRL_ERROR] = "CTRL_ERROR",
+   [EV_INFO_NOT_PERMITTED] = "INFO_NOT_PERMITTED",
+   [EV_INCORRECT_LENGTH] = "INCORRECT_LENGTH",
+   [EV_DL_CONNECT] = "DL_CONNECT",
+   [EV_DL_DISCONNECT] = "DL_DISCONNECT",
+   [EV_DL_DATA] = "DL_DATA",
+   [EV_DL_UNIT_DATA] = "DL_UNIT_DATA",
+   [EV_DL_FLOW_ON] = "DL_FLOW_ON",
+   [EV_DL_FLOW_OFF] = "DL_FLOW_OFF",
+   [EV_LM_DATA] = "LM_DATA",
+   [EV_UA] = "UA",
+   [EV_DM] = "DM",
+   [EV_UI] = "UI",
+   [EV_DISC] = "DISC",
+   [EV_SABM] = "SABM",
+   [EV_SABME] = "SABME",
+   [EV_TEST] = "TEST",
+   [EV_I] = "I",
+   [EV_RR] = "RR",
+   [EV_RNR] = "RNR",
+   [EV_REJ] = "REJ",
+   [EV_SREJ] = "SREJ",
+   [EV_FRMR] = "FRMR",
+   [EV_XID] = "XID",
+   [EV_UNKNOWN_FRAME] = "UNKNOWN_FRAME",
+   [EV_TIMER_EXPIRE_T1] = "TIMER_EXPIRE_T1",
+   [EV_TIMER_EXPIRE_T2] = "TIMER_EXPIRE_T2",
+   [EV_TIMER_EXPIRE_T3] = "TIMER_EXPIRE_T3",
+   [EV_DRAIN_SENDQ] = "DRAIN_SENDQ",
+};
+
+static const char *ax25_dl_strevent(ax25_dl_event_type_t ev) {
+    if (ev < 0 || ev > sizeof(ax25_dl_eventmsg) / sizeof(ax25_dl_eventmsg[0]))
+        return "unknown";
+    if (ax25_dl_eventmsg[ev] == NULL)
+        return "unknown";
+    return ax25_dl_eventmsg[ev];
+}
+
 void ax25_dl_event(ax25_dl_event_t *ev) {
-    DEBUG(D8(conn_get_state(ev->conn)), STR(": "), D8(ev->event));
+    DEBUG(D8(conn_get_state(ev->conn)), STR(": "), STR(ax25_dl_strevent(ev->event)));
     switch (conn_get_state(ev->conn)) {
         case STATE_DISCONNECTED: ax25_dl_disconnected(ev); break;
         case STATE_AWAITING_CONNECTION: ax25_dl_awaiting_connection(ev); break;
@@ -1699,3 +1739,5 @@ const char *ax25_dl_strerror(ax25_dl_error_t err) {
     }
     return ax25_dl_errmsg[err] ?: "Unknown error";
 }
+
+
