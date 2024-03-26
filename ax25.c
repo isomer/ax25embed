@@ -228,7 +228,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
                     case 0b00000100: ev.event = EV_RNR; break;
                     case 0b00001000: ev.event = EV_REJ; break;
                     case 0b00001100: ev.event = EV_SREJ; break;
-                    default: 
+                    default:
                                      ev.event = EV_UNKNOWN_FRAME;
                                      DEBUG(STR("Unknown sframe, control="), X8(control));
                                      break;

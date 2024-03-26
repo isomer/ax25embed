@@ -82,8 +82,8 @@ static void push_reply_addrs(ax25_dl_event_t *ev, packet_t *pkt, type_t type) {
     /* add end of addresses marker */
     pkt->buffer[pkt->len-1] |= 0b00000001;
 
-    pkt->buffer[SSID_LEN] |= (type & 0b01) != 0 ?  0b10000000 : 0;
-    pkt->buffer[2*SSID_LEN] |= (type & 0b10) != 0 ? 0b10000000 : 0;
+    pkt->buffer[SSID_LEN-1] |= (type & 0b01) != 0 ?  0b10000000 : 0;
+    pkt->buffer[2*SSID_LEN-1] |= (type & 0b10) != 0 ? 0b10000000 : 0;
 }
 
 static void push_u_control(packet_t *pkt, uint8_t cmd, type_t type, bool p, bool f) {
