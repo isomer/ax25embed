@@ -725,24 +725,26 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
             }
             break;
+
          case EV_UA:
-            if (ev->f) {
-                if (ev->conn->l3_initiated) {
-                    dl_disconnect_indication(ev);
-                } else {
-                    if (ev->conn->snd_state != ev->conn->ack_state) {
-                        discard_queue(ev->conn);
-                        dl_disconnect_indication(ev);
-                    }
-                    timer_stop_t1(ev);
-                    timer_stop_t2(ev);
-                    timer_stop_t3(ev);
-                    ev->conn->snd_state = ev->conn->ack_state = ev->conn->rcv_state = 0;
-                    select_t1(ev);
-                    set_state(ev->conn, STATE_CONNECTED);
-                }
-            } else {
+            if (!ev->f) {
                 dl_error(ev, ERR_D);
+                break;
+            }
+
+            if (ev->conn->l3_initiated) {
+                dl_connect_indication(ev);
+            } else {
+                if (ev->conn->snd_state != ev->conn->ack_state) {
+                    discard_queue(ev->conn);
+                    dl_connect_indication(ev);
+                }
+                timer_stop_t1(ev);
+                timer_stop_t2(ev);
+                timer_stop_t3(ev);
+                ev->conn->snd_state = ev->conn->ack_state = ev->conn->rcv_state = 0;
+                select_t1(ev);
+                set_state(ev->conn, STATE_CONNECTED);
             }
             break;
 
