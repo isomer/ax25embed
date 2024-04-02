@@ -2,31 +2,50 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Based on AX.25 v2.2 (https://www.tapr.org/pdf/AX25.2.2.pdf)
+ * Then updated for AX.25 v2.2 2017 update (https://wiki.oarc.uk/_media/packet:ax25.2.2.10.pdf)
  *
  * This is currently as literal translation of the SDL as I can possibly make it.
  *
  * Notes:
  *  - TEST frames aren't handled anywhere?
- *  - The SDL talks about "TIV" and "Next T1 value" but they are both actually "T1V"
- *  - The SDL says "last T1 value * 2 ** (RC+1) * SRTT" but it actually means "T1V = 2 ** (RC+1) * SRTT"
- *  - The SDL says "set version 2.0" and "set version 2.2" but those should be shown as function calls.
- *  - Why do the "set version" functions set T2 to 3s?
- *  - Figure C4.1 is blank, and would be really useful.
+ *  - The 1998 SDL talks about "TIV" and "Next T1 value" but they are both
+ *    actually "T1V" (Fixed in 2017 version)
+ *  - The 1998 SDL says "last T1 value * 2 ** (RC+1) * SRTT" but it actually
+ *    means "T1V = 2 ** (RC+1) * SRTT". In 2017 version is
+ *    "Next T1 = RC*0.25 + SRT * 2", but still probably should refer to T1V?
+ *  - The SDL says "set version 2.0" and "set version 2.2" but those should be
+ *    probably be shown as function calls?
+ *  - Why do the "set version" functions set T2 to 3s - there is no T2 defined.
+ *    (In both 1998 and 2017 versions.)
+ *  - Figure C4.1 in 1998 is blank, and would be really useful.  2017 has
+ *    removed the empty figure.
  *  - In section C4.3, it lists states 0..4, then immediately lists errors for
- *    state 5 (and defines state 5 in the SDL)
- *  - Section C4.3 is missing many fields that are referred to in the SDL (eg RC retry count).
- *  - set version * procedures set "n1r" which is never referred to anywhere else, presumably it's just N1.
- *  - "The Retries parameter field (PI=10) allows the negotiation of the retry count (N1)." should be N2.
- *  - DL ERROR indication (K) is not defined, but are used in multiple different errors?
+ *    state 5 (and defines state 5 in the SDL) (Fixed in 2017)
+ *  - Section C4.3 is missing many fields that are referred to in the SDL (eg
+ *    RC retry count). (Both 1998 and 2017 versions.)
+ *  - In 1998, set version * procedures set "n1r" which is never referred to
+ *    anywhere else, presumably it's just N1.  (Fixed in 2017)
+ *  - "The Retries parameter field (PI=10) allows the negotiation of the retry
+ *    count (N1)." should be N2.  (In both 1998 and 2017 versions)
+ *  - DL ERROR indication (K) is not defined, but are used in multiple
+ *    different errors? (Both)
  *  - DL ERROR indication (G) is not defined.  It is "connection timed out"
- *  - DL ERROR indication (H) is not defined.  It is "connection timed out while disconnecting"
- *  - SABE on page 99 should be SABME
- *  - page 99: second V(s) <-- 0 should be V(r) <-- 0.
- *  - dicard should be discard.
- *  - page 100: "cleak Ackonwledge Pending"
- *  - page 100: "N9r)" should be "N(r)"
- *  - FRMR on page 101 refers to "Note 1" but no such note seems to exist anywhere.
- *  - Timer 1 expiry in "Timer Recovery" state does not stop the timer before disconnecting.
+ *    (Both)
+ *  - DL ERROR indication (H) is not defined.  It is "connection timed out
+ *    while disconnecting" (Both)
+ *  - SABE in Timer recovery state should be SABME. (Fixed in 2017)
+ *  - SABM in Timer recovery state: second V(s) <-- 0 should be V(r) <-- 0.
+ *    (Fixed in 2017)
+ *  - dicard should be discard. (Fixed in 2017)
+ *  - In Timer Recovery State, LM-SEIZE-CONFIRM: "cleak Ackonwledge Pending"
+ *    (Fixed in 2017 version)
+ *  - In Timer Recovery State, REJ: "N8r)" should be "N(r)" (Fixed in 2017
+ *    version)
+ *  - FRMR in Timer Recovery State, refers to "Note 1" but no such note seems
+ *    to exist anywhere. (Fixed in 2017).
+ *  - Timer 1 expiry in "Timer Recovery" state does not stop the timer before
+ *    disconnecting. (Both 1998 and 2017)
+ *  - I think establish_data_link(ev) should call set_version_2_0/set_version_2_2 (Both).
  */
 #include "ax25_dl.h"
 #include "ax25.h"
@@ -245,7 +264,7 @@ static void send_rnr(ax25_dl_event_t *ev, type_t type, bool f) {
 static packet_t *construct_i(ax25_dl_event_t *ev, uint8_t *info, size_t info_len, uint8_t nr) {
     packet_t *pkt = packet_allocate();
 
-    push_reply_addrs(ev, pkt, TYPE_RES);
+    push_reply_addrs(ev, pkt, TYPE_CMD);
     push_i_control(pkt, ev->p, nr, ev->conn->snd_state);
     packet_push(pkt, info, info_len);
 
@@ -253,7 +272,7 @@ static packet_t *construct_i(ax25_dl_event_t *ev, uint8_t *info, size_t info_len
 }
 
 static void dl_error(ax25_dl_event_t *ev, ax25_dl_error_t err) {
-    if (ev->conn->socket->on_error)
+    if (ev->conn && ev->conn->socket->on_error)
         ev->conn->socket->on_error(ev->conn->socket, err);
 }
 
@@ -392,14 +411,42 @@ static void clear_exception_conditions(ax25_dl_event_t *ev) {
     ev->conn->ack_pending = false;
 }
 
+static void set_version_2_0(ax25_dl_event_t *ev) {
+    ev->conn->version = AX_2_0;
+    ev->conn->srej_enabled = false;
+    ev->conn->modulo = 8;
+    ev->conn->n1 = 2048;
+    ev->conn->window_size = 4;
+    ev->conn->t2 = duration_seconds(3);
+    ev->conn->n2 = 10;
+}
+
+static void set_version_2_2(ax25_dl_event_t *ev) {
+    ev->conn->version = AX_2_2;
+    ev->conn->srej_enabled = true;
+    ev->conn->modulo = 128;
+    ev->conn->n1 = 2048;
+    ev->conn->window_size = 32;
+    ev->conn->t2 = duration_seconds(3);
+    ev->conn->n2 = 10;
+}
+
+
 static void establish_data_link(ax25_dl_event_t *ev) {
     clear_exception_conditions(ev);
-    ev->conn->rc = 0;
+    ev->conn->rc = 1;
     ev->p = true;
-    send_sabm(ev, ev->p);
+    if (ev->conn->modulo == 128) {
+        set_version_2_2(ev);
+        send_sabme(ev, ev->p);
+    } else {
+        set_version_2_0(ev);
+        send_sabm(ev, ev->p);
+    }
     timer_stop_t3(ev);
     timer_start_t3(ev);
 }
+
 
 static void nr_error_recovery(ax25_dl_event_t *ev) {
     dl_error(ev, ERR_J);
@@ -495,33 +542,10 @@ static void ui_check(ax25_dl_event_t *ev) {
     }
 }
 
-static void establish_extended_data_link(ax25_dl_event_t *ev) {
-    clear_exception_conditions(ev);
-    ev->conn->rc = 0;
-    bool p = true;
-    send_sabme(ev, p);
-    timer_stop_t3(ev);
-    timer_start_t3(ev);
-}
-
-static void set_version_2_0(ax25_dl_event_t *ev) {
-    ev->conn->srej_enabled = false;
-    ev->conn->modulo = 8;
-    ev->conn->n1 = 2048;
-    ev->conn->window_size = 4;
-    ev->conn->t2 = duration_seconds(3);
-    ev->conn->n2 = 10;
-}
-
-static void set_version_2_2(ax25_dl_event_t *ev) {
-    ev->conn->srej_enabled = false;
-    ev->conn->modulo = 128;
-    ev->conn->n1 = 2048;
-    ev->conn->window_size = 32;
-    ev->conn->t2 = duration_seconds(3);
-    ev->conn->n2 = 10;
-}
-
+/* State 0: Disconnected.
+ *
+ * ev->conn should be NULL, as there is no connection yet.
+ */
 static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
     switch (ev->event) {
         case EV_CTRL_ERROR:
@@ -608,7 +632,6 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
 
          case EV_SABM:
          case EV_SABME:
-            DEBUG(STR("recv SABM(E?)"));
             ev->f = ev->p;
 
             ev->conn = conn_find_or_create(&ev->address[ADDR_DST], &ev->address[ADDR_SRC], ev->port);
@@ -640,6 +663,8 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
     }
 }
 
+/* State 1: Awaiting Connection
+ */
 static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
     switch(ev->event) {
         case EV_CTRL_ERROR:
@@ -662,6 +687,13 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
             ev->f = ev->p;
             send_ua(ev, false);
             break;
+
+        case EV_SABME:
+            ev->f = ev-> p;
+            send_dm(ev, /* f= */ false, /* expedited= */ false);
+            set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+            break;
+
         case EV_DISC:
             ev->f = ev->p;
             send_dm(ev, ev->f, /* expedited= */ false);
@@ -720,6 +752,8 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
                 dl_disconnect_indication(ev);
                 timer_stop_t1(ev);
 
+                timer_stop_t3(ev); // missing from SDL
+
                 set_state(ev->conn, STATE_DISCONNECTED);
             } else {
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
@@ -732,20 +766,24 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
                 break;
             }
 
+            bool send_connect_indication = false;
+
             if (ev->conn->l3_initiated) {
-                dl_connect_indication(ev);
+                send_connect_indication = true;
             } else {
                 if (ev->conn->snd_state != ev->conn->ack_state) {
                     discard_queue(ev->conn);
-                    dl_connect_indication(ev);
+                    send_connect_indication = true;
                 }
-                timer_stop_t1(ev);
-                timer_stop_t2(ev);
-                timer_stop_t3(ev);
-                ev->conn->snd_state = ev->conn->ack_state = ev->conn->rcv_state = 0;
-                select_t1(ev);
-                set_state(ev->conn, STATE_CONNECTED);
             }
+            timer_stop_t1(ev);
+            timer_stop_t2(ev);
+            timer_start_t3(ev);
+            ev->conn->snd_state = ev->conn->ack_state = ev->conn->rcv_state = 0;
+            select_t1(ev);
+            set_state(ev->conn, STATE_CONNECTED);
+            if (send_connect_indication)
+                dl_connect_indication(ev);
             break;
 
          case EV_TIMER_EXPIRE_T1:
@@ -762,14 +800,11 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
             }
             break;
 
-         case EV_SABME:
-            ev->f = ev->p;
-            send_dm(ev, ev->f, /* expedited= */ false);
-            set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
-            break;
     }
 }
 
+/* State 2: Awaiting Release
+ */
 static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
     switch(ev->event) {
         case EV_CTRL_ERROR:
@@ -787,7 +822,13 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
             timer_stop_t2(ev);
             set_state(ev->conn, STATE_DISCONNECTED);
             break;
+
         case EV_SABM:
+            ev->f = ev->p;
+            send_dm(ev, ev->f, /* expedited= */ true);
+            break;
+
+        case EV_SABME:
             ev->f = ev->p;
             send_dm(ev, ev->f, /* expedited= */ true);
             break;
@@ -831,7 +872,6 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
         case EV_UNKNOWN_FRAME:
         case EV_DL_CONNECT:
         case EV_DL_DATA:
-        case EV_SABME:
         case EV_FRMR:
         case EV_LM_DATA:
         case EV_TIMER_EXPIRE_T2:
@@ -849,7 +889,7 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
 
         case EV_DM:
             if (ev->f) {
-                dl_connect_indication(ev); /* TODO: really?  Sure this isn't a disconnect notification? */
+                dl_disconnect_indication(ev);
                 timer_stop_t1(ev);
                 set_state(ev->conn, STATE_DISCONNECTED);
             }
@@ -869,6 +909,8 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
     }
 }
 
+/* State 3: Connected.
+ */
 static void ax25_dl_connected(ax25_dl_event_t *ev) {
     switch (ev->event) {
         case EV_CTRL_ERROR:
@@ -876,7 +918,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             discard_queue(ev->conn);
             establish_data_link(ev);
             ev->conn->l3_initiated = true;
-            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            if (ev->conn->version == AX_2_2)
+                set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+            else
+                set_state(ev->conn, STATE_AWAITING_CONNECTION);
             break;
 
         case EV_INFO_NOT_PERMITTED:
@@ -884,7 +929,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             discard_queue(ev->conn);
             establish_data_link(ev);
             ev->conn->l3_initiated = true;
-            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            if (ev->conn->version == AX_2_2)
+                set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+            else
+                set_state(ev->conn, STATE_AWAITING_CONNECTION);
             break;
 
         case EV_INCORRECT_LENGTH:
@@ -892,7 +940,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             discard_queue(ev->conn);
             establish_data_link(ev);
             ev->conn->l3_initiated = true;
-            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            if (ev->conn->version == AX_2_2)
+                set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+            else
+                set_state(ev->conn, STATE_AWAITING_CONNECTION);
             break;
 
         case EV_DL_CONNECT:
@@ -918,9 +969,13 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
          }
 
         case EV_DRAIN_SENDQ:
-            if (ev->conn->peer_busy
-                    || ev->conn->snd_state == ev->conn->ack_state + ev->conn->window_size ) {
+            if (ev->conn->peer_busy) {
+                DEBUG(STR("peer busy, not transmitting"));
                 /* Leave sendq buffer on queue */
+            } else if (ev->conn->snd_state == ev->conn->ack_state + ev->conn->window_size) {
+                /* Leave sendq buffer on queue */
+                CHECK(ev->conn->window_size > 0);
+                DEBUG(STR("window full, not transmitting"));
             } else {
                 ev->ns = ev->conn->snd_state;
                 ev->nr = ev->conn->rcv_state;
@@ -959,6 +1014,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
        case EV_SABM:
        case EV_SABME:
+            if (ev->event == EV_SABM)
+                set_version_2_0(ev);
+            else
+                set_version_2_2(ev);
             ev->f = ev->p;
             send_ua(ev, false);
             clear_exception_conditions(ev);
@@ -983,10 +1042,13 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             break;
 
        case EV_UA:
-            dl_error(ev, ERR_C);
+            dl_error(ev, ERR_K); /* K is not defined */
             establish_data_link(ev);
             ev->conn->l3_initiated = false;
-            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            if (ev->conn->version == AX_2_2)
+                set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+            else
+                set_state(ev->conn, STATE_AWAITING_CONNECTION);
             break;
 
        case EV_DM:
@@ -1002,7 +1064,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             dl_error(ev, ERR_K); /* K is not defined */
             establish_data_link(ev);
             ev->conn->l3_initiated = false;
-            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            if (ev->conn->version == AX_2_2)
+                set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+            else
+                set_state(ev->conn, STATE_AWAITING_CONNECTION);
             break;
 
        case EV_DL_FLOW_OFF:
@@ -1051,7 +1116,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 check_i_frame_acked(ev);
             } else {
                 nr_error_recovery(ev);
-                set_state(ev->conn, STATE_AWAITING_CONNECTION);
+                if (ev->conn->version == AX_2_2)
+                    set_state(ev->conn, STATE_AWAITING_CONNECT_2_2);
+                else
+                    set_state(ev->conn, STATE_AWAITING_CONNECTION);
             }
             break;
 
@@ -1077,7 +1145,6 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
        case EV_SREJ:
             ev->conn->peer_busy = false;
-            check_need_for_response(ev);
             if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 if (ev->type == TYPE_CMD ? ev->p : ev->f) {
                     ev->conn->ack_state = ev->nr;
@@ -1122,7 +1189,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             }
 
             if (!seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
-                /* recieved ack out of window */
+                /* received ack out of window */
                 nr_error_recovery(ev);
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
                 break;
@@ -1229,6 +1296,8 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
     }
 }
 
+/* State 4: Timer Recovery
+ */
 static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
     switch (ev->event) {
         case EV_CTRL_ERROR:
@@ -1653,6 +1722,8 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
     }
 }
 
+/* State 5: Awaiting v2.2 Connection
+ */
 static void ax25_dl_awaiting_connection_2_2(ax25_dl_event_t *ev) {
     (void) ev;
     UNIMPLEMENTED();
@@ -1739,7 +1810,7 @@ const char *ax25_dl_strerror(ax25_dl_error_t err) {
     if (err < 0 || err > sizeof(ax25_dl_errmsg) / sizeof(ax25_dl_errmsg[0])) {
         return "Unknown Error";
     }
-    return ax25_dl_errmsg[err] ?: "Unknown error";
+    return ax25_dl_errmsg[err] ? ax25_dl_errmsg[err] : "Unknown error";
 }
 
 

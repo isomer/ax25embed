@@ -13,7 +13,7 @@ static connection_t conntbl[MAX_CONN] = { { .state = STATE_DISCONNECTED, }, };
 bool conn_is_extended(connection_t *conn) {
     if (!conn)
         return false;
-    return conn->version == AX_2_1;
+    return conn->version == AX_2_2;
 }
 
 connection_t *conn_find(ssid_t *local, ssid_t *remote, uint8_t port) {
@@ -50,6 +50,7 @@ connection_t *conn_find_or_create(ssid_t *local, ssid_t *remote, uint8_t port) {
         conn->snd_state = 0;
         conn->ack_state = 0;
         conn->rcv_state = 0;
+        conn->window_size = 0;
         conn->t1_expiry = INSTANT_ZERO;
         conn->t2_expiry = INSTANT_ZERO;
         conn->t3_expiry = INSTANT_ZERO;

@@ -14,7 +14,7 @@ struct dl_socket_t;
 
 typedef enum version_t {
     AX_2_0,
-    AX_2_1,
+    AX_2_2,
 } version_t;
 
 typedef enum conn_state_t {
