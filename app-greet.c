@@ -45,7 +45,8 @@ static void greet_init(void) {
 }
 
 int main(int argc, char *argv[]) {
-    debug("Initializing greet");
+    platform_init();
+    DEBUG(STR("Initializing greet"));
     if (!ssid_from_string("M7QQQ-2", &local))
         panic("can't set local callsign");
     ssid_set_local(&local);
@@ -53,6 +54,6 @@ int main(int argc, char *argv[]) {
         panic("can't set remote callsign");
     serial_init(argc, argv);
     greet_init();
-    debug("Running");
+    DEBUG(STR("Running"));
     serial_wait();
 }

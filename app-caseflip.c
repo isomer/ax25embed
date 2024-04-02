@@ -39,12 +39,13 @@ static void caseflip_connect(dl_socket_t *sock) {
 }
 
 int main(int argc, char *argv[]) {
-    debug("Initializing");
+    platform_init();
+    DEBUG(STR("Initializing"));
     ssid_t local;
     ssid_from_string("M7QQQ-1", &local);
     ssid_set_local(&local);
     serial_init(argc, argv);
     listen_socket.on_connect = caseflip_connect;
-    debug("Running");
+    DEBUG(STR("Running"));
     serial_wait();
 }

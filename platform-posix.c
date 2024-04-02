@@ -3,6 +3,7 @@
  *
  * additional platform apis that rely on posix
  */
+#define _POSIX_C_SOURCE 200809L
 #include "platform.h"
 #include "time.h"
 #include <stdio.h>
@@ -25,7 +26,10 @@ void debug_putch(char ch) {
 }
 
 void debug(const char *msg) {
-    puts(msg);
+    for (const char *cp = msg; *cp; cp++) {
+        debug_putch(*cp);
+    }
+    debug_internal_eol();
 }
 
 void panic(const char *msg) {
@@ -46,6 +50,10 @@ void debug_internal_str(struct debug_t *v) {
 }
 
 void debug_internal_eol(void) {
-    putchar('\n');
+    debug_putch('\n');
     fflush(stdout);
+}
+
+void platform_init(void) {
+    /* Nothing to do for POSIX */
 }

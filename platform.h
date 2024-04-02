@@ -7,6 +7,9 @@
 #define PLATFORM_H
 #include <stdint.h>
 
+/* Called at startup to initialise the platform APIs. */
+void platform_init(void);
+
 __attribute__((noreturn)) void panic(const char *dbg_msg);
 void debug(const char *dbg_msg);
 void debug_putch(char ch);
