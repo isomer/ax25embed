@@ -5,6 +5,7 @@
  *
  * Debug output definitions
  */
+#include <stddef.h>
 #include <stdint.h>
 #include <stdnoreturn.h>
 
@@ -16,6 +17,10 @@ struct debug_t {
         const void *ptr;
         uint8_t u8;
         int i;
+        struct {
+            const void *ptr;
+            size_t len;
+        } buffer;
     };
 };
 
@@ -26,12 +31,15 @@ void debug_internal_x8(struct debug_t *self);
 static inline struct debug_t debug_x8(uint8_t v) { return (struct debug_t) { .fmt = debug_internal_x8, .u8 = v }; }
 void debug_internal_str(struct debug_t *self);
 static inline struct debug_t debug_str(const char *v) { return (struct debug_t) { .fmt = debug_internal_str, .ptr = v }; }
+void debug_internal_buffer(struct debug_t *self);
+static inline struct debug_t debug_buffer(const void *buf, size_t len) { return (struct debug_t) { .fmt = debug_internal_buffer, .buffer = { .ptr = buf, .len = len } }; }
 void debug_internal_eol(void);
 
 #define INT(v) debug_int(v)
 #define D8(v) debug_d8(v)
 #define X8(v) debug_x8(v)
 #define STR(v) debug_str(v)
+#define BUF(ptr, len) debug_buffer(ptr, len)
 
 #define DEBUG1(v) do { struct debug_t debug_fmt_value = (v); debug_fmt_value.fmt(&debug_fmt_value); } while(0)
 #define DEBUG2(v, ...) DEBUG1(v); DEBUG1(__VA_ARGS__)

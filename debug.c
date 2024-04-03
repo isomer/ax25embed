@@ -6,9 +6,9 @@
 #include "debug.h"
 #include "platform.h"
 
+static const char hexit[16] = "0123456789ABCDEF";
 
 void debug_internal_x8(struct debug_t *v) {
-    static const char hexit[16] = "0123456789ABCDEF";
     debug_putch(hexit[v->u8 >> 4]);
     debug_putch(hexit[v->u8 & 0x0F]);
 }
@@ -32,6 +32,15 @@ void debug_internal_int(struct debug_t *v) {
 void debug_internal_str(struct debug_t *v) {
     for (const char *cp = v->ptr; *cp; cp++) {
         debug_putch(*cp);
+    }
+}
+
+void debug_internal_buffer(struct debug_t *v) {
+    for (size_t idx = 0; idx < v->buffer.len; ++idx) {
+        uint8_t byte = ((uint8_t *)v->buffer.ptr)[idx];
+        debug_putch(hexit[byte >> 4]);
+        debug_putch(hexit[byte & 0x0F]);
+        debug_putch(' ');
     }
 }
 

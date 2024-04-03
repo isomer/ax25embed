@@ -23,7 +23,7 @@ static void greet_error(dl_socket_t *sock, ax25_dl_error_t err) {
 static void greet_data(dl_socket_t *sock, const uint8_t *data, size_t datalen) {
     (void) sock;
     (void) data;
-    DEBUG(STR("Got data, len="), D8(datalen));
+    DEBUG(STR("Got data, len="), D8(datalen), STR(" Buffer="), BUF(data, datalen));
 }
 
 static void greet_disconnect(dl_socket_t *sock) {
