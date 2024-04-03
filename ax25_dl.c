@@ -50,9 +50,9 @@
 #include "ax25_dl.h"
 #include "ax25.h"
 #include "config.h"
+#include "debug.h"
 #include "buffer.h"
 #include "kiss.h"
-#include "platform.h"
 
 static dl_socket_t dl_sockets[MAX_SOCKETS];
 

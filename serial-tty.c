@@ -3,13 +3,15 @@
  *
  * A platform that speaks over a Unix TTY.
  */
+#define _POSIX_C_SOURCE 200809L
 #include "platform.h"
 #include "connection.h"
 #include "kiss.h"
 #include "serial.h"
 #include "ax25_dl.h"
-#include <sys/types.h>
+#include <sys/select.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <net/if.h>
 #include <fcntl.h>
 #include <netdb.h>

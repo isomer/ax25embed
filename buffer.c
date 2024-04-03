@@ -6,7 +6,7 @@
 #include "buffer.h"
 #include "config.h"
 #include "metric.h"
-#include "platform.h"
+#include "debug.h"
 #include <string.h> // for memcpy
 
 /* TODO: Instead of always using the largest buffer size, we should have

@@ -5,6 +5,7 @@ LIB= \
 	 ax25.o \
 	 buffer.o \
 	 connection.o \
+	 debug.o \
 	 kiss.o \
 	 metric.o \
 	 packet.o \

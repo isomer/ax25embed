@@ -5,6 +5,7 @@
  */
 #include "packet.h"
 #include "config.h"
+#include "debug.h"
 #include "metric.h"
 #include "platform.h"
 #include <string.h> // for memcpy

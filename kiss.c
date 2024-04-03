@@ -6,8 +6,8 @@
 #include "kiss.h"
 #include "ax25.h"
 #include "config.h"
+#include "debug.h"
 #include "metric.h"
-#include "platform.h"
 #include "serial.h"
 
 #undef ACKMODE
@@ -193,7 +193,7 @@ void kiss_set_txdelay(uint8_t port, uint8_t delay) {
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_TXDELAY);
     kiss_xmit_byte(port_to_serial(port), delay);
     kiss_xmit_byte(port_to_serial(port), FEND);
-    debug("set txdelay");
+    DEBUG(STR("set txdelay"));
 }
 
 void kiss_set_slottime(uint8_t port, uint8_t delay) {
@@ -201,7 +201,7 @@ void kiss_set_slottime(uint8_t port, uint8_t delay) {
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_SLOTTIME);
     kiss_xmit_byte(port_to_serial(port), delay);
     kiss_xmit_byte(port_to_serial(port), FEND);
-    debug("set slottime");
+    DEBUG(STR("set slottime"));
 }
 
 void kiss_set_duplex(uint8_t port, bool full_duplex) {
@@ -209,5 +209,5 @@ void kiss_set_duplex(uint8_t port, bool full_duplex) {
     kiss_xmit_byte(port_to_serial(port), (port_to_unit(port) << 4) | KISS_FULLDUP);
     kiss_xmit_byte(port_to_serial(port), full_duplex ? 1 : 0);
     kiss_xmit_byte(port_to_serial(port), FEND);
-    debug("set duplex");
+    DEBUG(STR("set duplex"));
 }

@@ -5,7 +5,7 @@
  */
 #ifndef CONNECTION_H
 #define CONNECTION_H
-#include "platform.h"
+#include "debug.h"
 #include "buffer.h"
 #include "ssid.h"
 #include "time.h"

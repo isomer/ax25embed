@@ -6,9 +6,9 @@
 #include "ax25.h"
 #include "ax25_dl.h"
 #include "connection.h"
+#include "debug.h"
 #include "kiss.h"
 #include "metric.h"
-#include "platform.h"
 #include "packet.h"
 #include "ssid.h"
 
