@@ -26,6 +26,10 @@ enum {
 
     FRAME_P     = 0b00010000,
     FRAME_F     = 0b00010000,
+
+    FRAME16_P   = 0b0000000100000000,
+    FRAME16_F   = 0b0000000100000000,
+
 };
 
 void ax25_recv(uint8_t port, uint8_t pkt[], size_t pktlen);

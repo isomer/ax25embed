@@ -106,7 +106,6 @@ static void push_reply_addrs(ax25_dl_event_t *ev, packet_t *pkt, type_t type) {
 }
 
 static void push_u_control(packet_t *pkt, uint8_t cmd, type_t type, bool p, bool f) {
-    /* TODO: support MODULO_128 */
     if (type == TYPE_RES) {
         cmd |= (f ? FRAME_F : 0);
     } else {
@@ -115,24 +114,49 @@ static void push_u_control(packet_t *pkt, uint8_t cmd, type_t type, bool p, bool
     packet_push_byte(pkt, cmd);
 }
 
-static void push_s_control(packet_t *pkt, uint8_t cmd, type_t type, bool p, bool f, uint8_t nr) {
-    /* TODO: support MODULO_128 */
-    if (type == TYPE_RES) {
-        cmd |= (f ? FRAME_F : 0);
-    } else {
-        cmd |= (p ? FRAME_P : 0);
+static void push_s_control(packet_t *pkt, uint8_t modulo, uint8_t cmd, type_t type, bool p, bool f, uint8_t nr) {
+    if (modulo == 8) {
+        if (type == TYPE_RES) {
+            cmd |= (f ? FRAME_F : 0);
+        } else {
+            cmd |= (p ? FRAME_P : 0);
+        }
+        cmd |= (nr << 5) & 0b11100000;
+        packet_push_byte(pkt, cmd);
     }
-    cmd |= (nr << 5) & 0b11100000;
-    packet_push_byte(pkt, cmd);
+    else {
+        uint16_t ctl = 0;
+        if (type == TYPE_RES) {
+            ctl |= (f ? FRAME16_F : 0);
+        } else {
+            ctl |= (p ? FRAME16_P : 0);
+        }
+        ctl |= (nr << 9) & 0b1111111000000000;
+        ctl |= cmd;
+
+        packet_push_byte(pkt, ctl & 0xFF);
+        packet_push_byte(pkt, ctl >> 8);
+        /* TODO: support MODULO_128 */
+    }
 }
 
-static void push_i_control(packet_t *pkt, bool p, uint8_t nr, uint8_t ns) {
-    /* TODO: support MODULO_128 */
-    uint8_t ctl = 0;
-    ctl |= (p ? FRAME_P : 0);
-    ctl |= (nr << 5) & 0b11100000;
-    ctl |= (ns << 1) & 0b00001110;
-    packet_push_byte(pkt, ctl);
+static void push_i_control(packet_t *pkt, uint8_t modulo, bool p, uint8_t nr, uint8_t ns) {
+    if (modulo == 8) {
+        uint8_t ctl = 0;
+        ctl |= (p ? FRAME_P : 0);
+        ctl |= (nr << 5) & 0b11100000;
+        ctl |= (ns << 1) & 0b00001110;
+        packet_push_byte(pkt, ctl);
+    }
+    else {
+        uint16_t ctl = 0;
+        ctl |= (p ? FRAME16_P : 0);
+        ctl |= (nr << 9) & 0b1111111000000000;
+        ctl |= (ns << 1) & 0b0000000011111110;
+
+        packet_push_byte(pkt, ctl & 0xFF);
+        packet_push_byte(pkt, ctl >> 8);
+    }
 }
 
 static void send_dm(ax25_dl_event_t *ev, bool f, bool expedited) {
@@ -220,7 +244,7 @@ static void send_srej(ax25_dl_event_t *ev, type_t type) {
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
-    push_s_control(pkt, FRAME_SREJ, type, ev->p, ev->f, ev->conn->rcv_state);
+    push_s_control(pkt, ev->conn->modulo, FRAME_SREJ, type, ev->p, ev->f, ev->conn->rcv_state);
 
     kiss_xmit(pkt->port, pkt->buffer, pkt->len);
     packet_free(&pkt);
@@ -231,7 +255,7 @@ static void send_rej(ax25_dl_event_t *ev, type_t type) {
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
-    push_s_control(pkt, FRAME_REJ, TYPE_RES, ev->p, ev->f, ev->conn->rcv_state);
+    push_s_control(pkt, ev->conn->modulo, FRAME_REJ, TYPE_RES, ev->p, ev->f, ev->conn->rcv_state);
 
     kiss_xmit(pkt->port, pkt->buffer, pkt->len);
     packet_free(&pkt);
@@ -243,7 +267,7 @@ static void send_rr(ax25_dl_event_t *ev, type_t type, bool f) {
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
-    push_s_control(pkt, FRAME_RR, type, ev->p, f, ev->conn->rcv_state);
+    push_s_control(pkt, ev->conn->modulo, FRAME_RR, type, ev->p, f, ev->conn->rcv_state);
 
     kiss_xmit(pkt->port, pkt->buffer, pkt->len);
     packet_free(&pkt);
@@ -255,7 +279,7 @@ static void send_rnr(ax25_dl_event_t *ev, type_t type, bool f) {
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
-    push_s_control(pkt, FRAME_RNR, type, ev->p, f, ev->conn->rcv_state);
+    push_s_control(pkt, ev->conn->modulo, FRAME_RNR, type, ev->p, f, ev->conn->rcv_state);
 
     kiss_xmit(pkt->port, pkt->buffer, pkt->len);
     packet_free(&pkt);
@@ -265,7 +289,7 @@ static packet_t *construct_i(ax25_dl_event_t *ev, uint8_t *info, size_t info_len
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, TYPE_CMD);
-    push_i_control(pkt, ev->p, nr, ev->conn->snd_state);
+    push_i_control(pkt, ev->conn->modulo, ev->p, nr, ev->conn->snd_state);
     packet_push(pkt, info, info_len);
 
     return pkt;
