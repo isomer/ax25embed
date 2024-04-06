@@ -21,7 +21,7 @@ packet_t *packet_allocate(void) {
     }
 
     while (packets[packet_next].in_use)
-        packet_next++;
+        packet_next = (packet_next + 1) % MAX_PACKETS;
 
     CHECK(!packets[packet_next].in_use);
 
@@ -33,7 +33,7 @@ packet_t *packet_allocate(void) {
 
     in_use++;
 
-    return &packets[packet_next++];
+    return &packets[packet_next];
 }
 
 void packet_free(packet_t **packet) {
