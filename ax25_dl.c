@@ -46,6 +46,9 @@
  *  - Timer 1 expiry in "Timer Recovery" state does not stop the timer before
  *    disconnecting. (Both 1998 and 2017)
  *  - I think establish_data_link(ev) should call set_version_2_0/set_version_2_2 (Both).
+ *  - I think that when processing REJ and SREJ when checking V(a) <= N(r) <=
+ *    V(s) it should instead be V(a) <= N(r) < V(s) otherwise you can end up
+ *    attempting to retransmit a frame that's not been sent yet. (Both).
  */
 #include "ax25_dl.h"
 #include "ax25.h"

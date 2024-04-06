@@ -61,14 +61,14 @@ typedef struct connection_t {
     struct dl_socket_t *socket;
 } connection_t;
 
-/** Returns true if low <= x <= high, assuming modulo n */
+/** Returns true if low <= x < high, assuming modulo n */
 static inline bool seqno_in_range(uint8_t low, uint8_t x, uint8_t high) {
     if (low <= high) {
         /*      low ...... high     */
-        return low <= x && x <= high;
+        return low <= x && x < high;
     } else {
         /* .... high       low .... */
-        return low <= x || x <= high;
+        return low <= x || x < high;
     }
 }
 
