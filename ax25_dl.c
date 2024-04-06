@@ -57,6 +57,10 @@
 #include "buffer.h"
 #include "kiss.h"
 
+static duration_t default_srtt(void) {
+    return duration_millis(200);
+}
+
 static dl_socket_t dl_sockets[MAX_SOCKETS];
 
 dl_socket_t listen_socket = {
@@ -347,6 +351,10 @@ void dl_send(dl_socket_t *sock, const void *data, size_t datalen) {
     ax25_dl_event(&ev);
 }
 
+void mdl_negotiate_request(ax25_dl_event_t *ev) {
+    //UNIMPLEMENTED();
+}
+
 static buffer_t *pop_queue(connection_t *conn) {
     if (!conn->send_queue_head)
         return NULL;
@@ -471,12 +479,12 @@ static void establish_data_link(ax25_dl_event_t *ev) {
         send_sabm(ev, ev->p);
     }
     timer_stop_t3(ev);
-    timer_start_t3(ev);
+    timer_start_t1(ev);
 }
 
 
 static void nr_error_recovery(ax25_dl_event_t *ev) {
-    dl_error(ev, ERR_J);
+    dl_error(ev, ERR_J); /* N(r) sequence error. */
     establish_data_link(ev);
     ev->conn->l3_initiated = false;
 }
@@ -559,7 +567,7 @@ static void check_need_for_response(ax25_dl_event_t *ev) {
 
 static void ui_check(ax25_dl_event_t *ev) {
     if (ev->type == TYPE_CMD) {
-        if (ev->info_len < ev->conn ? ev->conn->n1 : MAX_PACKET_SIZE) {
+        if (ev->info_len < (ev->conn ? ev->conn->n1 : MAX_PACKET_SIZE)) {
             dl_unit_data_indication(ev, ev->info, ev->info_len);
         } else {
             dl_error(ev, ERR_N); /* Defined as being error K, but it's not defined what it is! */
@@ -643,7 +651,7 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
 
          case EV_DL_CONNECT:
             ev->conn = conn_find_or_create(&ev->address[ADDR_DST], &ev->address[ADDR_SRC], ev->port);
-            ev->conn->srtt = duration_millis(200);
+            ev->conn->srtt = default_srtt();
             ev->conn->t1v = duration_mul(ev->conn->srtt, 2);
 
             dl_socket_t *sock = socket_allocate(ev->conn);
@@ -674,7 +682,7 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
                 sock->on_connect = listen_socket.on_connect;
                 dl_connect_indication(ev);
 
-                ev->conn->srtt = duration_millis(200);
+                ev->conn->srtt = default_srtt();
                 ev->conn->t1v = duration_mul(ev->conn->srtt, 2);
 
                 set_state(ev->conn, STATE_CONNECTED);
@@ -1753,8 +1761,172 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
 /* State 5: Awaiting v2.2 Connection
  */
 static void ax25_dl_awaiting_connection_2_2(ax25_dl_event_t *ev) {
-    (void) ev;
-    UNIMPLEMENTED();
+    switch (ev->event) {
+        case EV_DL_DISCONNECT:
+            /* requeue request */
+            break;
+
+        case EV_DL_CONNECT:
+            discard_queue(ev->conn);
+
+            ev->conn->l3_initiated = true;
+            break;
+
+        case EV_DL_UNIT_DATA:
+            send_ui(ev, TYPE_CMD);
+            break;
+
+        case EV_DL_DATA:
+            if (!ev->conn->l3_initiated) {
+                buffer_t *buf = buffer_allocate(ev->info, ev->info_len);
+                push_i(ev->conn, buf);
+            }
+            break;
+
+        case EV_DRAIN_SENDQ:
+            if (!ev->conn->l3_initiated) {
+                /* don't dequeue frame */
+                break;
+            } else {
+                buffer_t *buffer = pop_queue(ev->conn);
+                buffer_free(buffer);
+            }
+            break;
+
+        /* all other DL primatives */
+        case EV_DL_FLOW_OFF:
+        case EV_DL_FLOW_ON:
+        case EV_TIMER_EXPIRE_T2:
+        case EV_TIMER_EXPIRE_T3:
+            /* Ignore */
+            break;
+
+        case EV_CTRL_ERROR:
+            dl_error(ev, ERR_L); /* Control field invalid or not implemented. */
+            break;
+
+        case EV_INFO_NOT_PERMITTED:
+            dl_error(ev, ERR_M); /* Information field was received in a U- or S-type frame. */
+            break;
+
+        case EV_INCORRECT_LENGTH:
+            dl_error(ev, ERR_N); /* Length of frame incorrect for frame type. */
+            break;
+
+
+        case EV_UI:
+            ui_check(ev);
+            if (!ev->p) {
+                send_dm(ev, /* f= */ true, /* expedited= */ false);
+            }
+            break;
+
+        case EV_DM:
+            if (!ev->f) {
+                set_state(ev->conn, STATE_AWAITING_CONNECTION);
+                break;
+            }
+
+            discard_queue(ev->conn);
+
+            dl_disconnect_indication(ev);
+
+            timer_stop_t1(ev);
+
+            set_state(ev->conn, STATE_DISCONNECTED);
+            break;
+
+        case EV_UA:
+            if (!ev->f) {
+                dl_error(ev, ERR_D); /* UA received without F=1 when SABM or DISC was sent P=1. */
+                break;
+            }
+
+            if (!ev->conn->l3_initiated) {
+                if (ev->conn->snd_state != ev->conn->ack_state) {
+                    ev->conn->srtt = default_srtt();
+                    ev->conn->t1v = duration_mul(ev->conn->srtt, 2);
+                } else {
+                    dl_connect_indication(ev);
+                }
+            } else {
+                dl_connect_indication(ev);
+            }
+
+            timer_stop_t1(ev);
+            timer_start_t3(ev);
+
+            ev->conn->snd_state = 0;
+            ev->conn->ack_state = 0;
+            ev->conn->rcv_state = 0;
+
+            select_t1(ev);
+
+            mdl_negotiate_request(ev);
+
+            set_state(ev->conn, STATE_CONNECTED);
+            break;
+
+        case EV_TIMER_EXPIRE_T1:
+            if (ev->conn->rc == ev->conn->n2) {
+                discard_queue(ev->conn);
+                dl_error(ev, ERR_G); /* (G is not defined): Connection timed out */
+                dl_disconnect_indication(ev);
+                set_state(ev->conn, STATE_DISCONNECTED);
+                break;
+            }
+
+            ev->conn->rc++;
+
+            select_t1(ev);
+
+            timer_start_t1(ev);
+            break;
+
+        case EV_FRMR:
+            ev->conn->srtt = default_srtt();
+            ev->conn->t1v = duration_mul(ev->conn->srtt, 2);
+            establish_data_link(ev);
+            ev->conn->l3_initiated = true;
+            ev->conn->version = AX_2_0;
+            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            break;
+
+        case EV_SABME:
+            ev->f = ev->p;
+            send_ua(ev, /* expedited= */ false);
+            break;
+
+        case EV_SABM:
+            ev->f = ev->p;
+            send_ua(ev, /* expedited= */ false);
+            set_state(ev->conn, STATE_AWAITING_CONNECTION);
+            break;
+
+        case EV_DISC:
+            ev->f = ev->p;
+            send_dm(ev, ev->f, /* expedited= */ false);
+            break;
+
+        case EV_TEST:
+            if (ev->type == TYPE_CMD) {
+                send_test(ev, TYPE_RES, ev->f);
+            }
+            break;
+
+        /* all other ML primatives */
+        case EV_LM_DATA:
+        case EV_I:
+        case EV_RR:
+        case EV_RNR:
+        case EV_REJ:
+        case EV_SREJ:
+        case EV_XID:
+        case EV_UNKNOWN_FRAME:
+            /* Ignore frame */
+            break;
+
+    }
 }
 
 static const char *ax25_dl_eventmsg[] = {
@@ -1807,6 +1979,9 @@ void ax25_dl_event(ax25_dl_event_t *ev) {
         case STATE_TIMER_RECOVERY: ax25_dl_timer_recovery(ev); break;
         case STATE_AWAITING_CONNECT_2_2: ax25_dl_awaiting_connection_2_2(ev); break;
     }
+
+    if (ev->conn)
+        CHECK(ev->conn->state == STATE_CONNECTED || instant_cmp(ev->conn->t3_expiry, INSTANT_ZERO) == 0);
 }
 
 static const char *ax25_dl_errmsg[] = {
