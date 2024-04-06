@@ -139,7 +139,6 @@ static void push_s_control(packet_t *pkt, uint8_t modulo, uint8_t cmd, type_t ty
 
         packet_push_byte(pkt, ctl & 0xFF);
         packet_push_byte(pkt, ctl >> 8);
-        /* TODO: support MODULO_128 */
     }
 }
 
@@ -679,7 +678,7 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
                 ev->conn->t1v = duration_mul(ev->conn->srtt, 2);
 
                 set_state(ev->conn, STATE_CONNECTED);
-                ev->conn->l3_initiated = false; /* TODO: Check what this should be set to? */
+                ev->conn->l3_initiated = false;
                 timer_start_t3(ev);
             }
             if (ev->event == EV_SABM) {
@@ -940,6 +939,7 @@ static void ax25_dl_awaiting_release(ax25_dl_event_t *ev) {
 /* State 3: Connected.
  */
 static void ax25_dl_connected(ax25_dl_event_t *ev) {
+    CHECK(ev->conn);
     switch (ev->event) {
         case EV_CTRL_ERROR:
             dl_error(ev, ERR_L);
