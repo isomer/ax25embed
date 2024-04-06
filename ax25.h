@@ -8,6 +8,23 @@
 #include <stdint.h>
 #include <stddef.h>
 
+typedef enum pid_t {
+    PID_PLP             = 0x01, /* ISO 8208/CCITT X.25 PLP */
+    PID_VJCOMPIP        = 0x06, /* Compressed TCP/IP packet.  Van Jacobson (RFC 1144) */
+    PID_VJIP            = 0x07, /* Uncompressed TCP/IP packet.  Van Jacobson (RFC 1144) */
+    PID_SEGMENT         = 0x08, /* Segmentation fragment */
+    PID_TEXNET          = 0xC3, /* TEXNET datagram protocol */
+    PID_LINK_QUAL       = 0xC4, /* Link Quality Protocol */
+    PID_APPLETALK       = 0xCA, /* Appletalk */
+    PID_APPLETALK_ARP   = 0xCB, /* Appletalk ARP */
+    PID_IP              = 0xCC, /* ARPA Internet Protocol */
+    PID_ARP             = 0xCD, /* ARPA Address Resolution */
+    PID_FLEXNET         = 0xCE, /* FlexNet */
+    PID_NETROM          = 0xCF, /* NET/ROM */
+    PID_NOL3            = 0xF0, /* No Layer 3 implemented */
+    PID_ESCAPE          = 0xFF, /* Escape Character, next octet contains more L3 information */
+} pid_t;
+
 enum {
     FRAME_SABME = 0b01101111,
     FRAME_SABM  = 0b00101111,
