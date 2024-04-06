@@ -37,7 +37,7 @@ enum {
 };
 
 /* Address 0 and 1 have a C bit, address 2 and 3 have an H bit */
-static bool get_ch_bit(uint8_t pkt[], size_t pktlen, size_t addrnum) {
+static bool get_ch_bit(const uint8_t pkt[], size_t pktlen, size_t addrnum) {
     size_t offset = addrnum * SSID_LEN + SSID_LEN-1;
     CHECK(offset < pktlen);
     return (pkt[offset] & 0b10000000) != 0;
@@ -48,7 +48,7 @@ static bool get_ch_bit(uint8_t pkt[], size_t pktlen, size_t addrnum) {
  * This is the first unused (H bit not set) digipeater address, or if there are
  * no unused digipeater addresses, this is the destination address.
  */
-static size_t get_active_destination(uint8_t pkt[], size_t pktlen, size_t address_count) {
+static size_t get_active_destination(const uint8_t pkt[], size_t pktlen, size_t address_count) {
     for(size_t addr = ADDR_DIGI1; addr < address_count; ++addr) {
         if (!get_ch_bit(pkt, pktlen, addr))
             return addr;
@@ -59,7 +59,7 @@ static size_t get_active_destination(uint8_t pkt[], size_t pktlen, size_t addres
 /* Look at the next byte in the packet, without changing the offset.
  * returns false if the packet is truncated.
  */
-static bool pkt_peek(uint8_t pkt[], size_t pktlen, const size_t *offset, uint8_t *byte) {
+static bool pkt_peek(const uint8_t pkt[], size_t pktlen, const size_t *offset, uint8_t *byte) {
     if (*offset < pktlen) {
         *byte = pkt[*offset];
         return true;
@@ -80,7 +80,7 @@ static bool is_u_frame8(uint8_t control) {
     return (control & CONTROL8_SU_MASK) == 0b11;
 }
 
-void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) {
+void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pktlen) {
     (void) id;
     ax25_dl_event_t ev;
 
@@ -244,7 +244,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, uint8_t pkt[], size_t pktlen) 
     return;
 }
 
-void ax25_recv(uint8_t port, uint8_t pkt[], size_t pktlen) {
+void ax25_recv(uint8_t port, const uint8_t pkt[], size_t pktlen) {
     ax25_recv_ackmode(port, 0, pkt, pktlen);
 }
 
