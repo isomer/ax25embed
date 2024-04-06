@@ -308,7 +308,8 @@ static void dl_data_indication(ax25_dl_event_t *ev, const uint8_t *data, size_t 
 static void dl_unit_data_indication(ax25_dl_event_t *ev, const uint8_t *data, size_t datalen) {
     (void) ev;
     /* unconnected data appears on the listen socket */
-    listen_socket.on_data(&listen_socket, data, datalen);
+    if (listen_socket.on_data)
+        listen_socket.on_data(&listen_socket, data, datalen);
 }
 
 static void dl_connect_indication(ax25_dl_event_t *ev) {
@@ -556,7 +557,7 @@ static void check_need_for_response(ax25_dl_event_t *ev) {
 
 static void ui_check(ax25_dl_event_t *ev) {
     if (ev->type == TYPE_CMD) {
-        if (ev->info_len < ev->conn->n1) {
+        if (ev->info_len < ev->conn ? ev->conn->n1 : MAX_PACKET_SIZE) {
             dl_unit_data_indication(ev, ev->info, ev->info_len);
         } else {
             dl_error(ev, ERR_N); /* Defined as being error K, but it's not defined what it is! */
