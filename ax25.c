@@ -92,10 +92,12 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     size_t offset = 0;
     for (;;) {
         if (pktlen - offset < SSID_LEN) {
+            DEBUG(STR("addr underrun"));
             metric_inc(METRIC_UNDERRUN);
             return;
         }
         if (!ssid_parse(&pkt[offset], &ev.address[ev.address_count++])) {
+            DEBUG(STR("invalid addr"));
             metric_inc(METRIC_INVALID_ADDR);
             return;
         }
