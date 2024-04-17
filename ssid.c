@@ -7,6 +7,7 @@
 
 #include "ax25_dl.h"
 #include "config.h"
+#include "debug.h"
 #include "platform.h"
 #include <string.h> // For memcmp
 
@@ -77,3 +78,22 @@ bool ssid_is_mine(const ssid_t *ssid) {
 void ssid_set_local(const ssid_t *ssid) {
     ssid_my_addr = *ssid;
 }
+
+static void debug_internal_ssid(struct debug_t *self) {
+    ssid_t *ssid = self->ptr;
+    for(size_t i = 0; i < SSID_LEN-1; ++i) {
+        if (ssid->ssid[i] != ' ')
+            debug_putch(ssid->ssid[i]);
+        else
+            break;
+    }
+    if (ssid->ssid[SSID_LEN-1] != '\0') {
+        debug_putch('-');
+        debug_putch(ssid->ssid[SSID_LEN-1] + '0');
+    }
+}
+
+struct debug_t debug_ssid(ssid_t *ssid) {
+    return (struct debug_t) { .fmt = debug_internal_ssid, .ptr = ssid };
+}
+

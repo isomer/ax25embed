@@ -35,4 +35,7 @@ bool ssid_is_mine(const ssid_t *ssid);
  */
 void ssid_set_local(const ssid_t *ssid);
 
+struct debug_t debug_ssid(ssid_t *ssid);
+#define DBG_SSID(ssid) debug_ssid(ssid)
+
 #endif

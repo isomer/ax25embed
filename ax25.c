@@ -126,7 +126,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
 
     /* Don't accept packets that are not to me. */
     if (!ssid_is_mine(&ev.address[current_dst])) {
-        DEBUG(STR("not to me"));
+        DEBUG(DBG_SSID(&ev.address[current_dst]), STR(": not to me"));
         metric_inc(METRIC_NOT_ME);
         metric_inc_by(METRIC_NOT_ME_BYTES, pktlen);
         return;
