@@ -62,13 +62,24 @@ typedef struct connection_t {
 } connection_t;
 
 /** Returns true if low <= x < high, assuming modulo n */
-static inline bool seqno_in_range(uint8_t low, uint8_t x, uint8_t high) {
+static inline bool seqno_in_range_excl(uint8_t low, uint8_t x, uint8_t high) {
     if (low <= high) {
         /*      low ...... high     */
         return low <= x && x < high;
     } else {
         /* .... high       low .... */
         return low <= x || x < high;
+    }
+}
+
+/** Returns true if low <= x <= high, assuming modulo n */
+static inline bool seqno_in_range_incl(uint8_t low, uint8_t x, uint8_t high) {
+    if (low <= high) {
+        /*      low ...... high     */
+        return low <= x && x <= high;
+    } else {
+        /* .... high       low .... */
+        return low <= x || x <= high;
     }
 }
 

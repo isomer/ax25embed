@@ -1148,7 +1148,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
        case EV_RR:
             ev->conn->peer_busy = false;
             check_need_for_response(ev);
-            if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 check_i_frame_acked(ev);
             } else {
                 nr_error_recovery(ev);
@@ -1162,7 +1162,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
        case EV_RNR:
             ev->conn->peer_busy = true;
             check_need_for_response(ev);
-            if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 check_i_frame_acked(ev);
             } else {
                 nr_error_recovery(ev);
@@ -1181,7 +1181,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
        case EV_SREJ:
             ev->conn->peer_busy = false;
-            if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (seqno_in_range_excl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 if (ev->type == TYPE_CMD ? ev->p : ev->f) {
                     ev->conn->ack_state = ev->nr;
                 }
@@ -1198,7 +1198,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
         case EV_REJ:
             ev->conn->peer_busy = false;
             check_need_for_response(ev);
-            if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (seqno_in_range_excl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 ev->conn->ack_state = ev->nr;
                 timer_stop_t1(ev);
                 timer_stop_t3(ev);
@@ -1217,14 +1217,14 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
             }
 
             if (ev->info_len >= ev->conn->n1) {
-                dl_error(ev, ERR_O);
+                dl_error(ev, ERR_O); /* I frame exceeded maximum allowed length. */
                 establish_data_link(ev);
                 ev->conn->l3_initiated = false;
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
                 break;
             }
 
-            if (!seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (!seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 /* received ack out of window */
                 nr_error_recovery(ev);
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
@@ -1483,7 +1483,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
             if (ev->type == TYPE_RES && ev->f) {
                 timer_stop_t1(ev);
                 select_t1(ev);
-                if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+                if (seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                     ev->conn->ack_state = ev->nr;
                     if (ev->conn->snd_state == ev->conn->rcv_state) {
                         timer_start_t3(ev);
@@ -1502,7 +1502,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                     enquiry_response(ev, true);
                 }
 
-                if (seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+                if (seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                     ev->conn->ack_state = ev->nr;
                     break;
                 } else {
@@ -1571,7 +1571,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 enquiry_response(ev, ev->f);
             }
 
-            if (!seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (!seqno_in_range_excl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 nr_error_recovery(ev);
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
                 break;
@@ -1651,7 +1651,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 select_t1(ev);
             }
 
-            if (!seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (!seqno_in_range_excl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 nr_error_recovery(ev);
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
                 break;
@@ -1687,7 +1687,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 break;
             }
 
-            if (!seqno_in_range(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
+            if (!seqno_in_range_excl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 /* recieved ack out of window */
                 nr_error_recovery(ev);
                 set_state(ev->conn, STATE_AWAITING_CONNECTION);
