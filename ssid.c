@@ -80,7 +80,7 @@ void ssid_set_local(const ssid_t *ssid) {
 }
 
 static void debug_internal_ssid(struct debug_t *self) {
-    ssid_t *ssid = self->ptr;
+    const ssid_t *ssid = self->ptr;
     for(size_t i = 0; i < SSID_LEN-1; ++i) {
         if (ssid->ssid[i] != ' ')
             debug_putch(ssid->ssid[i]);
