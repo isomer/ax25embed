@@ -26,7 +26,12 @@ bool ssid_from_string(const char *str, ssid_t *ssid) {
                 }
                 return true;
             default:
-                ssid->ssid[i] = str[i];
+                if (str[i] >= 'a' || str[i] <= 'z') {
+                    /* upper case */
+                    ssid->ssid[i] = str[i] - 'a' + 'A';
+                } else {
+                    ssid->ssid[i] = str[i];
+                }
                 break;
         }
     }
