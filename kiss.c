@@ -79,6 +79,7 @@ static void kiss_recv(uint8_t serial) {
                     buffer_len[serial]-3);
             break;
         default:
+            DEBUG(STR("Unexpected kiss command from TNC: "), X8(buffer[serial][0]));
             metric_inc(METRIC_UNKNOWN_KISS_COMMAND);
             break;
     }

@@ -92,12 +92,12 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     size_t offset = 0;
     for (;;) {
         if (pktlen - offset < SSID_LEN) {
-            DEBUG(STR("addr underrun"));
+            DEBUG(STR("underrun while parsing address #"), INT(ev.address_count));
             metric_inc(METRIC_UNDERRUN);
             return;
         }
         if (!ssid_parse(&pkt[offset], &ev.address[ev.address_count++])) {
-            DEBUG(STR("invalid addr"));
+            DEBUG(STR("failed to parse address #"), INT(ev.address_count-1));
             metric_inc(METRIC_INVALID_ADDR);
             return;
         }
@@ -109,14 +109,14 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
 
         /* Packets can only have up to MAX_ADDRESSES addresses */
         if (ev.address_count >= MAX_ADDRESSES) {
-            DEBUG(STR("too many addresses"));
+            DEBUG(STR("Too many addresses"));
             metric_inc(METRIC_INVALID_ADDR);
             return;
         }
     }
     /* Packets need at least two addresses */
     if (ev.address_count < 2) {
-        DEBUG(STR("too few addresses"));
+        DEBUG(STR("Too few addresses ("), INT(ev.address_count), STR(")"));
         metric_inc(METRIC_INVALID_ADDR);
         return;
     }
@@ -125,8 +125,9 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     size_t current_dst = get_active_destination(pkt, pktlen, ev.address_count);
 
     /* Don't accept packets that are not to me. */
-    if (!ssid_is_mine(&ev.address[current_dst])) {
-        DEBUG(DBG_SSID(&ev.address[current_dst]), STR(": not to me"));
+    ev.socket = dl_find_socket(&ev.address[current_dst], &ev.address[ADDR_SRC]);
+    if (!ev.socket) {
+        DEBUG(STR("Frame has a destination of "), DBG_SSID(&ev.address[current_dst]), STR(", which has no listener, ignoring."));
         metric_inc(METRIC_NOT_ME);
         metric_inc_by(METRIC_NOT_ME_BYTES, pktlen);
         return;

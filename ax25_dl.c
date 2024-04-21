@@ -63,20 +63,21 @@ static duration_t default_srtt(void) {
 
 static dl_socket_t dl_sockets[MAX_SOCKETS];
 
-dl_socket_t listen_socket = {
-    .conn = NULL,
-    .userdata = NULL,
-    .on_connect = NULL,
-    .on_error = NULL,
-    .on_data = NULL,
-    .on_disconnect = NULL,
-};
-
-static dl_socket_t *socket_allocate(connection_t *conn) {
+static dl_socket_t *socket_allocate(connection_t *conn, dl_socket_type_t type, ssid_t *local) {
     for(size_t i = 0; i < MAX_SOCKETS; ++i) {
-        if (dl_sockets[i].conn == NULL) {
-            dl_sockets[i].conn = conn;
-            conn->socket = &dl_sockets[i];
+        if (dl_sockets[i].type == DL_SOCK_CLOSED) {
+            dl_sockets[i] = (dl_socket_t) {
+                .type = type,
+                .conn = conn,
+                .local = *local,
+                .userdata = NULL,
+                .on_connect = NULL,
+                .on_error = NULL,
+                .on_data = NULL,
+                .on_disconnect = NULL,
+            };
+            if (conn)
+                conn->socket = &dl_sockets[i];
             return &dl_sockets[i];
          }
     }
@@ -85,8 +86,42 @@ static dl_socket_t *socket_allocate(connection_t *conn) {
 
 static void socket_free(dl_socket_t *socket) {
     socket->conn->socket = NULL;
+    socket->type = DL_SOCK_CLOSED;
     socket->conn = NULL;
     socket = NULL;
+}
+
+/* This iterates through all the sockets, if there's a connected socket with
+ * the correct (local, remote) pair, then return that, if not, then if there's
+ * a listening socket with the correct local ssid, return that, otherwise
+ * return NULL.
+ */
+dl_socket_t *dl_find_socket(ssid_t *local, ssid_t *remote) {
+    dl_socket_t *socket = NULL;
+    for(size_t i = 0; i < MAX_SOCKETS; ++i) {
+        switch (dl_sockets[i].type) {
+            case DL_SOCK_LISTEN:
+                if (ssid_cmp(local, &dl_sockets[i].local) == 0)
+                    socket = &dl_sockets[i];
+                break;
+            case DL_SOCK_CONNECTED:
+                if (remote
+                        && ssid_cmp(local, &dl_sockets[i].local) == 0
+                        && ssid_cmp(remote, &dl_sockets[i].conn->remote) == 0)
+                    return &dl_sockets[i];
+                break;
+            case DL_SOCK_CLOSED:
+                continue;
+        }
+    }
+    return socket;
+}
+
+dl_socket_t *dl_find_or_add_listener(ssid_t *name) {
+    dl_socket_t *listener = dl_find_socket(name, NULL);
+    if (listener)
+        return listener;
+    return socket_allocate(NULL, DL_SOCK_LISTEN, name);
 }
 
 static void push_reply_addrs(ax25_dl_event_t *ev, packet_t *pkt, type_t type) {
@@ -314,8 +349,14 @@ static void dl_data_indication(ax25_dl_event_t *ev, const uint8_t *data, size_t 
 static void dl_unit_data_indication(ax25_dl_event_t *ev, const uint8_t *data, size_t datalen) {
     (void) ev;
     /* unconnected data appears on the listen socket */
-    if (listen_socket.on_data)
-        listen_socket.on_data(&listen_socket, data, datalen);
+    if (ev->socket) {
+       if (ev->socket->on_data)
+           ev->socket->on_data(ev->socket, data, datalen);
+       else
+           DEBUG(STR("Ignoring unconnected data: Listener not accepting data"));
+    } else {
+        DEBUG(STR("Ignoring unconnected data: No listener"));
+    }
 }
 
 static void dl_connect_indication(ax25_dl_event_t *ev) {
@@ -337,8 +378,9 @@ dl_socket_t *dl_connect(ssid_t *remote, ssid_t *local, uint8_t port) {
     ev.address[ADDR_SRC] = *remote;
     ev.port = port;
     ev.conn = NULL;
+    ev.socket = NULL;
     ax25_dl_event(&ev);
-    return ev.conn ? socket_allocate(ev.conn) : NULL;
+    return ev.conn ? socket_allocate(ev.conn, DL_SOCK_CONNECTED, local) : NULL;
 }
 
 void dl_send(dl_socket_t *sock, const void *data, size_t datalen) {
@@ -351,8 +393,9 @@ void dl_send(dl_socket_t *sock, const void *data, size_t datalen) {
     ax25_dl_event(&ev);
 }
 
-void mdl_negotiate_request(ax25_dl_event_t *ev) {
-    //UNIMPLEMENTED();
+static void mdl_negotiate_request(ax25_dl_event_t *ev) {
+    (void)ev;
+    UNIMPLEMENTED();
 }
 
 static buffer_t *pop_queue(connection_t *conn) {
@@ -654,8 +697,10 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
             ev->conn->srtt = default_srtt();
             ev->conn->t1v = duration_mul(ev->conn->srtt, 2);
 
-            dl_socket_t *sock = socket_allocate(ev->conn);
-            sock->on_connect = listen_socket.on_connect;
+            dl_socket_t *sock = socket_allocate(ev->conn, DL_SOCK_CONNECTED, &ev->address[ADDR_DST]);
+
+            if (ev->socket)
+                sock->on_connect = ev->socket->on_connect;
 
             establish_data_link(ev);
 
@@ -678,8 +723,8 @@ static void ax25_dl_disconnected(ax25_dl_event_t *ev) {
                 ev->conn->ack_state = 0;
                 ev->conn->rcv_state = 0;
 
-                dl_socket_t *sock = socket_allocate(ev->conn);
-                sock->on_connect = listen_socket.on_connect;
+                dl_socket_t *sock = socket_allocate(ev->conn, DL_SOCK_CONNECTED, &ev->address[ADDR_DST]);
+                sock->on_connect = ev->socket->on_connect;
                 dl_connect_indication(ev);
 
                 ev->conn->srtt = default_srtt();
@@ -1019,7 +1064,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
                 buffer_t *buf = pop_queue(ev->conn);
                 packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
-                kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
+                tx_send(ev->conn->port, pkt->buffer, pkt->len);
                 buffer_free(buf);
                 if (ev->conn->sent_buffer[ev->ns]) {
                     packet_free(&ev->conn->sent_buffer[ev->ns]);
@@ -1394,7 +1439,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
 
             buffer_t *buf = pop_queue(ev->conn);
             packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
-            kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
+            tx_send(ev->conn->port, pkt->buffer, pkt->len);
             buffer_free(buf);
             if (ev->conn->sent_buffer[ev->ns]) {
                 packet_free(&ev->conn->sent_buffer[ev->ns]);

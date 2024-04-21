@@ -27,13 +27,6 @@ void ssid_debug(const ssid_t *ssid);
 /** write an ssid to a packet in ax.25 packet format. */
 bool ssid_push(packet_t *packet, const ssid_t *ssid);
 bool ssid_cmp(const ssid_t *lhs, const ssid_t *rhs);
-bool ssid_is_mine(const ssid_t *ssid);
-/** sets the local SSID.
- *
- * Should only be used once at startup, unspecified results if used while any
- * connections exist.
- */
-void ssid_set_local(const ssid_t *ssid);
 
 struct debug_t debug_ssid(ssid_t *ssid);
 #define DBG_SSID(ssid) debug_ssid(ssid)

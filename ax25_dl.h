@@ -101,13 +101,22 @@ typedef struct ax25_dl_event_t {
     ssid_t address[MAX_ADDRESSES];
     connection_t *conn;
     packet_t *packet;
+    struct dl_socket_t *socket;
 } ax25_dl_event_t;
 
 void ax25_dl_event(ax25_dl_event_t *ev);
 const char *ax25_dl_strerror(ax25_dl_error_t err);
 
+typedef enum dl_socket_type_t {
+    DL_SOCK_CLOSED,
+    DL_SOCK_LISTEN,
+    DL_SOCK_CONNECTED,
+} dl_socket_type_t;
+
 typedef struct dl_socket_t {
+    dl_socket_type_t type;
     connection_t *conn;
+    ssid_t local;
     void *userdata;
     void (*on_connect)(struct dl_socket_t *);
     void (*on_error)(struct dl_socket_t *, ax25_dl_error_t err);
@@ -115,10 +124,14 @@ typedef struct dl_socket_t {
     void (*on_disconnect)(struct dl_socket_t *);
 } dl_socket_t;
 
-extern dl_socket_t listen_socket;
-
 /** Create a new connection to remote, from local, on port port */
 dl_socket_t *dl_connect(ssid_t *remote, ssid_t *local, uint8_t port);
 void dl_send(dl_socket_t *sock, const void *data, size_t datalen);
+dl_socket_t *dl_find_or_add_listener(ssid_t *name);
+/* Finds a socket with the local and remote sides.
+ * Prefers connected sockets, over unconnected (listening) sockets.
+ * Returns NULL if no socket found.
+ */
+dl_socket_t *dl_find_socket(ssid_t *local, ssid_t *remote);
 
 #endif

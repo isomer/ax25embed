@@ -9,9 +9,6 @@
 #include "platform.h"
 #include "serial.h"
 
-ssid_t remote;
-ssid_t local;
-
 static const char greet_message[] = "Hello World";
 static const uint8_t greet_port = 0;
 
@@ -36,8 +33,8 @@ static void greet_connect(dl_socket_t *sock) {
     dl_send(sock, greet_message, sizeof(greet_message));
 }
 
-static void greet_init(void) {
-    dl_socket_t *sock = dl_connect(&remote, &local, greet_port);
+static void greet_init(ssid_t *local, ssid_t *remote) {
+    dl_socket_t *sock = dl_connect(remote, local, greet_port);
     sock->on_connect = greet_connect;
     sock->on_error = greet_error;
     sock->on_data = greet_data;
@@ -45,15 +42,16 @@ static void greet_init(void) {
 }
 
 int main(int argc, char *argv[]) {
+    ssid_t local;
+    ssid_t remote;
     platform_init();
     DEBUG(STR("Initializing greet"));
     if (!ssid_from_string("M7QQQ-2", &local))
         panic("can't set local callsign");
-    ssid_set_local(&local);
     if (!ssid_from_string("M7QQQ-1", &remote))
         panic("can't set remote callsign");
     serial_init(argc, argv);
-    greet_init();
+    greet_init(&local, &remote);
     DEBUG(STR("Running"));
     serial_wait();
 }

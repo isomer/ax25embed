@@ -38,14 +38,20 @@ static void caseflip_connect(dl_socket_t *sock) {
     sock->on_disconnect = caseflip_disconnect;
 }
 
+static void caseflip_init(ssid_t *ssid) {
+    dl_socket_t *listener = dl_find_or_add_listener(ssid);
+    listener->on_connect = caseflip_connect;
+    listener->on_data = caseflip_data; /* unconnected data */
+}
+
 int main(int argc, char *argv[]) {
     platform_init();
     DEBUG(STR("Initializing"));
+    serial_init(argc, argv);
+
     ssid_t local;
     ssid_from_string("M7QQQ-1", &local);
-    ssid_set_local(&local);
-    serial_init(argc, argv);
-    listen_socket.on_connect = caseflip_connect;
+    caseflip_init(&local);
     DEBUG(STR("Running"));
     serial_wait();
 }

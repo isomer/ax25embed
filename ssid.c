@@ -11,8 +11,6 @@
 #include "platform.h"
 #include <string.h> // For memcmp
 
-static ssid_t ssid_my_addr;
-
 bool ssid_from_string(const char *str, ssid_t *ssid) {
     ssid->ssid[SSID_LEN-1] = '\x00';
 
@@ -68,15 +66,6 @@ bool ssid_push(packet_t *packet, const ssid_t *ssid) {
 
 bool ssid_cmp(const ssid_t *lhs, const ssid_t *rhs) {
     return memcmp(lhs->ssid, rhs->ssid, sizeof(lhs->ssid));
-}
-
-/* Returns true if the frame is destined to this station */
-bool ssid_is_mine(const ssid_t *ssid) {
-    return ssid_cmp(ssid, &ssid_my_addr) == 0;
-}
-
-void ssid_set_local(const ssid_t *ssid) {
-    ssid_my_addr = *ssid;
 }
 
 static void debug_internal_ssid(struct debug_t *self) {
