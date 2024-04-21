@@ -62,3 +62,7 @@ duration_t duration_sub(duration_t minuend, duration_t subtrahend) {
 int duration_cmp(duration_t lhs, duration_t rhs) {
     return int64_sign(lhs.duration - rhs.duration);
 }
+
+int64_t duration_as_micros(duration_t duration) {
+    return duration.duration * INT64_C(1000000) / TIME_BASE;
+}

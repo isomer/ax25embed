@@ -68,43 +68,62 @@ void conn_release(connection_t *connection) {
     CHECK(instant_cmp(connection->t3_expiry, INSTANT_ZERO) == 0);
 }
 
-void conn_expire_timers(void) {
-    instant_t now = instant_now();
-    for(size_t i = 0; i < MAX_CONN; ++i) {
+duration_t conn_expire_timers(void) {
+    instant_t now;
+    instant_t next;
+    bool triggered;
+    do {
+        triggered = false;
+        now = instant_now();
+        next = instant_add(now, duration_seconds(3600));
 
-        if (conntbl[i].state == STATE_DISCONNECTED)
-            continue;
+        for(size_t i = 0; i < MAX_CONN; ++i) {
 
-        if (instant_cmp(conntbl[i].t1_expiry, INSTANT_ZERO) != 0 &&
-                instant_cmp(conntbl[i].t1_expiry, now) <= 0) {
-            ax25_dl_event_t ev;
-            conntbl[i].t1_expiry = INSTANT_ZERO;
-            ev.event = EV_TIMER_EXPIRE_T1;
-            ev.conn = &conntbl[i];
-            ev.address_count = 0;
-            ax25_dl_event(&ev);
+            if (conntbl[i].state == STATE_DISCONNECTED)
+                continue;
+
+            if (instant_cmp(conntbl[i].t1_expiry, INSTANT_ZERO) != 0) {
+                if (instant_cmp(conntbl[i].t1_expiry, now) <= 0) {
+                    ax25_dl_event_t ev;
+                    conntbl[i].t1_expiry = INSTANT_ZERO;
+                    ev.event = EV_TIMER_EXPIRE_T1;
+                    ev.conn = &conntbl[i];
+                    ev.address_count = 0;
+                    ax25_dl_event(&ev);
+                    triggered = true;
+                } else
+                    next = instant_min(next, conntbl[i].t1_expiry);
+            }
+
+            if (instant_cmp(conntbl[i].t2_expiry, INSTANT_ZERO) != 0) {
+                if (instant_cmp(conntbl[i].t2_expiry, now) <= 0) {
+                    ax25_dl_event_t ev;
+                    conntbl[i].t2_expiry = INSTANT_ZERO;
+                    ev.event = EV_TIMER_EXPIRE_T2;
+                    ev.conn = &conntbl[i];
+                    ev.address_count = 0;
+                    ax25_dl_event(&ev);
+                    triggered = true;
+                } else
+                    next = instant_min(next, conntbl[i].t2_expiry);
+            }
+
+            if (instant_cmp(conntbl[i].t3_expiry, INSTANT_ZERO) != 0) {
+                if (instant_cmp(conntbl[i].t3_expiry, now) <= 0) {
+                    ax25_dl_event_t ev;
+                    conntbl[i].t3_expiry = INSTANT_ZERO;
+                    ev.event = EV_TIMER_EXPIRE_T3;
+                    ev.conn = &conntbl[i];
+                    ev.address_count = 0;
+                    ax25_dl_event(&ev);
+                    triggered = true;
+                } else
+                    next = instant_min(next, conntbl[i].t3_expiry);
+            }
         }
+    } while (triggered);
 
-        if (instant_cmp(conntbl[i].t2_expiry, INSTANT_ZERO) != 0 &&
-                instant_cmp(conntbl[i].t2_expiry, now) <= 0) {
-            ax25_dl_event_t ev;
-            conntbl[i].t2_expiry = INSTANT_ZERO;
-            ev.event = EV_TIMER_EXPIRE_T2;
-            ev.conn = &conntbl[i];
-            ev.address_count = 0;
-            ax25_dl_event(&ev);
-        }
-
-        if (instant_cmp(conntbl[i].t3_expiry, INSTANT_ZERO) != 0 &&
-                instant_cmp(conntbl[i].t3_expiry, now) <= 0) {
-            ax25_dl_event_t ev;
-            conntbl[i].t3_expiry = INSTANT_ZERO;
-            ev.event = EV_TIMER_EXPIRE_T3;
-            ev.conn = &conntbl[i];
-            ev.address_count = 0;
-            ax25_dl_event(&ev);
-        }
-    }
+    return instant_sub(next, now);
 }
 
 void conn_dequeue(void) {

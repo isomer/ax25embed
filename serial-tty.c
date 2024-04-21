@@ -93,19 +93,21 @@ void serial_init(int argc, char *argv[]) {
 }
 
 void serial_wait(void) {
+    duration_t wait = DURATION_ZERO;
     for (;;) {
         uint8_t data;
         fd_set rfd;
         FD_ZERO(&rfd);
         FD_SET(serial_fd, &rfd);
-        struct timeval timeout = { .tv_sec = 0, .tv_usec = 10000, };
+        wait = conn_expire_timers();
+        int64_t wait_us = duration_as_micros(wait);
+        struct timeval timeout = { .tv_sec = wait_us / 1000000, .tv_usec = wait_us % 1000000 };
         select(serial_fd+1, &rfd, NULL, NULL, &timeout);
         if (FD_ISSET(serial_fd, &rfd)) {
             if (read(serial_fd, &data, sizeof(data)) != 1)
                 panic("cannot read");
             kiss_recv_byte(0, data);
         }
-        conn_expire_timers();
         conn_dequeue();
     }
 }

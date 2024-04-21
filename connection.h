@@ -91,6 +91,6 @@ connection_t *conn_find_or_create(ssid_t *local, ssid_t *remote, uint8_t port);
 static inline conn_state_t conn_get_state(connection_t *connection) { return connection ? connection->state : STATE_DISCONNECTED; }
 bool conn_is_extended(connection_t *conn);
 void conn_release(connection_t *connection);
-void conn_expire_timers(void);
+duration_t conn_expire_timers(void);
 void conn_dequeue(void);
 #endif
