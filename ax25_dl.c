@@ -7,6 +7,9 @@
  * This is currently as literal translation of the SDL as I can possibly make it.
  *
  * Notes:
+ *  - Figure 3.7 shows how to encode/decode frames, it claims the result should
+ *    be NJ7P, but it's actually LJ7P.
+ *  - Figure 3.8 has the end of address bit set midway through the addresses.
  *  - TEST frames aren't handled anywhere?
  *  - The 1998 SDL talks about "TIV" and "Next T1 value" but they are both
  *    actually "T1V" (Fixed in 2017 version)
@@ -52,9 +55,9 @@
  */
 #include "ax25_dl.h"
 #include "ax25.h"
+#include "buffer.h"
 #include "config.h"
 #include "debug.h"
-#include "buffer.h"
 #include "kiss.h"
 
 static duration_t default_srtt(void) {
@@ -1064,7 +1067,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
                 buffer_t *buf = pop_queue(ev->conn);
                 packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
-                tx_send(ev->conn->port, pkt->buffer, pkt->len);
+                kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
                 buffer_free(buf);
                 if (ev->conn->sent_buffer[ev->ns]) {
                     packet_free(&ev->conn->sent_buffer[ev->ns]);
@@ -1439,7 +1442,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
 
             buffer_t *buf = pop_queue(ev->conn);
             packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
-            tx_send(ev->conn->port, pkt->buffer, pkt->len);
+            kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
             buffer_free(buf);
             if (ev->conn->sent_buffer[ev->ns]) {
                 packet_free(&ev->conn->sent_buffer[ev->ns]);
