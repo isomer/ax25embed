@@ -16,6 +16,7 @@ typedef struct buffer_t {
 } buffer_t;
 
 buffer_t *buffer_allocate(const uint8_t *src, size_t len);
-void buffer_free(buffer_t *buffer);
+buffer_t *buffer_allocate_with_size(size_t len);
+void buffer_free(buffer_t **buffer);
 
 #endif

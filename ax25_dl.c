@@ -417,7 +417,7 @@ static buffer_t *pop_queue(connection_t *conn) {
 static void discard_queue(connection_t *conn) {
     while (conn->send_queue_head) {
         buffer_t *buf = pop_queue(conn);
-        buffer_free(buf);
+        buffer_free(&buf);
     }
 }
 
@@ -793,7 +793,7 @@ static void ax25_dl_awaiting_connection(ax25_dl_event_t *ev) {
                 /* Don't dequeue frame */
             } else {
                 buffer_t *buffer = pop_queue(ev->conn);
-                buffer_free(buffer);
+                buffer_free(&buffer);
             }
             break;
 
@@ -1068,7 +1068,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 buffer_t *buf = pop_queue(ev->conn);
                 packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
                 kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
-                buffer_free(buf);
+                buffer_free(&buf);
                 if (ev->conn->sent_buffer[ev->ns]) {
                     packet_free(&ev->conn->sent_buffer[ev->ns]);
                 }
@@ -1306,7 +1306,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                     ev->conn->srej_queue[ev->conn->rcv_state] = NULL;
 
                     dl_data_indication(ev, buf->buffer, buf->len);
-                    buffer_free(buf);
+                    buffer_free(&buf);
                     ev->conn->rcv_state = (ev->conn->rcv_state + 1) % (ev->conn->window_size);
                 }
 
@@ -1443,7 +1443,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
             buffer_t *buf = pop_queue(ev->conn);
             packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
             kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
-            buffer_free(buf);
+            buffer_free(&buf);
             if (ev->conn->sent_buffer[ev->ns]) {
                 packet_free(&ev->conn->sent_buffer[ev->ns]);
             }
@@ -1769,7 +1769,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                     ev->conn->srej_queue[ev->conn->rcv_state] = NULL;
 
                     dl_data_indication(ev, buf->buffer, buf->len);
-                    buffer_free(buf);
+                    buffer_free(&buf);
                     ev->conn->rcv_state = (ev->conn->rcv_state + 1) % (ev->conn->window_size);
                 }
 
@@ -1837,7 +1837,7 @@ static void ax25_dl_awaiting_connection_2_2(ax25_dl_event_t *ev) {
                 break;
             } else {
                 buffer_t *buffer = pop_queue(ev->conn);
-                buffer_free(buffer);
+                buffer_free(&buffer);
             }
             break;
 

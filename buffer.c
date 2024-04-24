@@ -32,8 +32,9 @@ buffer_t *buffer_allocate(const uint8_t *src, size_t len) {
     return NULL;
 }
 
-void buffer_free(buffer_t *buffer) {
+void buffer_free(buffer_t **buffer) {
     metric_inc(METRIC_BUFFER_FREE);
-    buffer->in_use = false;
-    buffer->len = 0;
+    (*buffer)->in_use = false;
+    (*buffer)->len = 0;
+    (*buffer) = NULL;
 }

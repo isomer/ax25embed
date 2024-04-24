@@ -23,7 +23,7 @@ static void caseflip_data(dl_socket_t *sock, const uint8_t *data, size_t datalen
         }
     }
     dl_send(sock, buf->buffer, buf->len);
-    buffer_free(buf);
+    buffer_free(&buf);
 }
 
 static void caseflip_disconnect(dl_socket_t *sock) {
