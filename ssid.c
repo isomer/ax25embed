@@ -52,14 +52,6 @@ bool ssid_parse(const uint8_t buffer[static SSID_LEN], ssid_t *ssid) {
     return true;
 }
 
-void ssid_debug(const ssid_t *ssid) {
-    for(size_t i=0; i<SSID_LEN-1; ++i) {
-        debug_putch(ssid->ssid[i]);
-    }
-    debug_putch(ssid->ssid[SSID_LEN-1]+'0');
-    debug_putch('\n');
-}
-
 bool ssid_push(packet_t *packet, const ssid_t *ssid) {
     for(size_t i=0; i<SSID_LEN-1; ++i) {
         packet_push_byte(packet, ssid->ssid[i] << 1);
@@ -73,21 +65,24 @@ bool ssid_cmp(const ssid_t *lhs, const ssid_t *rhs) {
     return memcmp(lhs->ssid, rhs->ssid, sizeof(lhs->ssid));
 }
 
-static void debug_internal_ssid(struct debug_t *self) {
+static bool format_internal_ssid(char **buffer, size_t *buffer_len, struct format_t *self) {
+#define RETURN_IF_FALSE(x) do { if (!(x)) return false; } while(0)
     const ssid_t *ssid = self->ptr;
     for(size_t i = 0; i < SSID_LEN-1; ++i) {
         if (ssid->ssid[i] != ' ')
-            debug_putch(ssid->ssid[i]);
+            RETURN_IF_FALSE(format_putch(buffer, buffer_len, ssid->ssid[i]));
         else
             break;
     }
     if (ssid->ssid[SSID_LEN-1] != '\0') {
-        debug_putch('-');
-        debug_putch(ssid->ssid[SSID_LEN-1] + '0');
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, '-'));
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, ssid->ssid[SSID_LEN-1] + '0'));
     }
+#undef RETURN_IF_FALSE
+    return true;
 }
 
-struct debug_t debug_ssid(ssid_t *ssid) {
-    return (struct debug_t) { .fmt = debug_internal_ssid, .ptr = ssid };
+struct format_t format_ssid(ssid_t *ssid) {
+    return (struct format_t) { .fmt = format_internal_ssid, .ptr = ssid };
 }
 

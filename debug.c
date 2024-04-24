@@ -6,45 +6,67 @@
 #include "debug.h"
 #include "platform.h"
 
-static const char hexit[16] = "0123456789ABCDEF";
+#define RETURN_IF_FALSE(x) do { if(!(x)) return false; } while(0)
 
-void debug_internal_x8(struct debug_t *v) {
-    debug_putch(hexit[v->u8 >> 4]);
-    debug_putch(hexit[v->u8 & 0x0F]);
+
+bool format_putch(char **buffer, size_t *buffer_len, char ch) {
+    if (*buffer_len > 0) {
+        *((*buffer)++) = ch;
+        (*buffer_len)--;
+        return true;
+    }
+    return false;
 }
 
-static void debug_internal_int_recursive(int i) {
+static const char hexit[16] = "0123456789ABCDEF";
+
+bool format_internal_x8(char **buffer, size_t *buffer_len, struct format_t *v) {
+    RETURN_IF_FALSE(format_putch(buffer, buffer_len, hexit[v->u8 >> 4]));
+    return format_putch(buffer, buffer_len, hexit[v->u8 & 0x0F]);
+}
+
+static bool format_internal_int_recursive(char **buffer, size_t *buffer_len, int i) {
     if (i < 0) {
-        debug_putch('-');
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, '-'));
         i = -i;
     }
     if (i > 9) {
-        debug_internal_int_recursive(i / 10);
+        RETURN_IF_FALSE(format_internal_int_recursive(buffer, buffer_len, i / 10));
         i %= 10;
     }
-    debug_putch('0' + i);
+    return format_putch(buffer, buffer_len, '0' + i);
 }
 
-void debug_internal_int(struct debug_t *v) {
-    debug_internal_int_recursive(v->i);
+bool format_internal_int(char **buffer, size_t *buffer_len, struct format_t *v) {
+    return format_internal_int_recursive(buffer, buffer_len, v->i);
 }
 
-void debug_internal_str(struct debug_t *v) {
+bool format_internal_str(char **buffer, size_t *buffer_len, struct format_t *v) {
     for (const char *cp = v->ptr; *cp; cp++) {
-        debug_putch(*cp);
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, *cp));
     }
+    return true;
 }
 
-void debug_internal_buffer(struct debug_t *v) {
+bool format_internal_buffer(char **buffer, size_t *buffer_len, struct format_t *v) {
     for (size_t idx = 0; idx < v->buffer.len; ++idx) {
         uint8_t byte = ((uint8_t *)v->buffer.ptr)[idx];
-        debug_putch(hexit[byte >> 4]);
-        debug_putch(hexit[byte & 0x0F]);
-        debug_putch(' ');
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, hexit[byte >> 4]));
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, hexit[byte & 0x0F]));
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, ' '));
     }
+    return true;
 }
 
-void debug_internal_eol(void) {
-    debug_putch('\n');
+bool format_internal_lenstr(char **buffer, size_t *buffer_len, struct format_t *v) {
+    for (size_t idx = 0; idx < v->buffer.len; ++idx) {
+        uint8_t ch = ((uint8_t *)v->buffer.ptr)[idx];
+        RETURN_IF_FALSE(format_putch(buffer, buffer_len, ch));
+    }
+    return true;
+}
+
+bool format_internal_eol(char **buffer, size_t *buffer_len) {
+    return format_putch(buffer, buffer_len, '\n');
 }
 

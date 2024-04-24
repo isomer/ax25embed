@@ -10,6 +10,17 @@
 #include "serial.h"
 #include <string.h> // for memcmp
 
+#define OUTPUT(sock, ...) \
+    do { \
+        char output_buffer[1024]; \
+        char *output_ptr = &output_buffer[1]; \
+        output_buffer[0] = '\xF0'; \
+        size_t output_buffer_len = sizeof(output_buffer)-1; \
+        FORMAT(&output_ptr, &output_buffer_len, __VA_ARGS__); \
+        output((sock), output_buffer, sizeof(output_buffer) - output_buffer_len); \
+    } while(0)
+
+
 typedef struct cli_command_t {
     const uint8_t *name;
     void (*command)(dl_socket_t *sock, const uint8_t data[], size_t datalen);
@@ -51,21 +62,18 @@ static void skipwhite(const uint8_t **data, size_t *datalen) {
 }
 
 static bool get_token(const uint8_t **data, size_t *datalen, uint8_t *token, size_t *tokenlen) {
+    size_t tokenrem = *tokenlen;
     while(*datalen > 0 && !is_white((*data)[0])) {
-        if (*tokenlen > 0) {
+        if (tokenrem > 0) {
             *(token++) = (*data)[0];
-            (*tokenlen)--;
+            tokenrem--;
         } else
             return false;
         (*data)++;
         (*datalen)--;
     }
-    if (*tokenlen > 0) {
-        (*token) = '\0'; // Null termination
-        return true;
-    } else {
-        return false;
-    }
+    *tokenlen = *tokenlen - tokenrem;
+    return true;
 }
 
 static int cmp_token(const uint8_t *lhs, size_t lhslen, const uint8_t *rhs, size_t rhslen) {
@@ -84,11 +92,20 @@ static size_t my_strlen(const uint8_t *str) {
     return len;
 }
 
+static void output(dl_socket_t *sock, const char *msg, size_t len) {
+    if (sock) {
+        dl_send(sock, msg, len);
+    } else {
+        DEBUG(LENSTR(&msg[1], len-2)); /* skip the PID and truncate the \n */
+    }
+}
+
 
 static void cmd_connect(dl_socket_t *sock, const uint8_t data[], size_t datalen) {
     (void) sock;
     (void) data;
     (void) datalen;
+    OUTPUT(sock, STR("Not implemented"));
     UNIMPLEMENTED();
 }
 
@@ -105,9 +122,7 @@ static const struct apps_t {
 };
 
 static void cmd_register(dl_socket_t *sock, const uint8_t data[], size_t datalen) {
-    const uint8_t *help = (uint8_t*)"register <ssid> <app>\n";
-    const uint8_t *unknown_app = (uint8_t*)"Unknown command\n";
-    const uint8_t *invalid_ssid = (uint8_t*)"Invalid SSID\n";
+    const char *help = "register <ssid> <app>\n";
     uint8_t ssid[8];
     size_t ssid_len = sizeof(ssid);
     uint8_t app[8];
@@ -116,30 +131,31 @@ static void cmd_register(dl_socket_t *sock, const uint8_t data[], size_t datalen
     skipwhite(&data, &datalen);
 
     if (!get_token(&data, &datalen, ssid, &ssid_len)) {
-        dl_send(sock, help, my_strlen(help));
+        OUTPUT(sock, STR(help));
         return;
     }
 
     if (!ssid_from_string((char *)ssid, &local_ssid)) {
-        dl_send(sock, invalid_ssid, my_strlen(invalid_ssid));
+        OUTPUT(sock, STR("Invalid SSID"));
         return;
     }
 
     skipwhite(&data, &datalen);
 
     if (!get_token(&data, &datalen, app, &app_len)) {
-        dl_send(sock, help, my_strlen(help));
+        OUTPUT(sock, STR(help));
         return;
     }
 
     for(size_t it = 0; apps[it].name; ++it) {
         if (cmp_token(app, app_len, apps[it].name, my_strlen(apps[it].name)) == 0) {
             apps[it].init(&local_ssid, data, datalen);
+            OUTPUT(sock, STR("Registered: "), LENSTR(apps[it].name, my_strlen(apps[it].name)));
             return;
         }
     }
 
-    dl_send(sock, unknown_app, my_strlen(unknown_app));
+    OUTPUT(sock, STR("Unknown app: "), LENSTR(data, datalen));
 
     return;
 }
@@ -153,9 +169,13 @@ static const cli_command_t commands[] = {
 static void do_cmd(dl_socket_t *sock, const uint8_t *data, size_t datalen) {
     uint8_t cmd[8];
     size_t cmdlen = sizeof(cmd);
+    DEBUG(STR("Command: "), LENSTR(data, datalen));
+
     skipwhite(&data, &datalen);
-    if (!get_token(&data, &datalen, cmd, &cmdlen))
+    if (!get_token(&data, &datalen, cmd, &cmdlen)) {
+        OUTPUT(sock, STR("Failed to read command"));
         return;
+    }
 
     for(size_t it = 0; commands[it].name; ++it) {
         if (cmp_token(cmd, cmdlen, commands[it].name, my_strlen(commands[it].name)) == 0) {
@@ -164,8 +184,7 @@ static void do_cmd(dl_socket_t *sock, const uint8_t *data, size_t datalen) {
         }
     }
 
-    static const char unknown_command[] = "\xF0Unknown command\n";
-    dl_send(sock, unknown_command, sizeof(unknown_command)-1);
+    OUTPUT(sock, STR("Unknown command: ["), LENSTR(cmd, cmdlen), STR("]"));
 }
 
 static void cli_data(dl_socket_t *sock, const uint8_t *data, size_t datalen) {
@@ -212,14 +231,11 @@ static const uint8_t *init_script[] = {
 
 int main(int argc, char *argv[]) {
     platform_init();
-    DEBUG(STR("Initializing"));
     serial_init(argc, argv);
     for(size_t it = 0; init_script[it]; ++it) {
         do_cmd(NULL, init_script[it], my_strlen(init_script[it]));
     }
-    //ssid_t local;
-    //ssid_from_string("M7QQQ-1", &local);
-    //cli_init(&local);
+    DEBUG(STR("Running"));
     serial_wait();
 }
 

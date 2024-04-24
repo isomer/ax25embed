@@ -46,9 +46,9 @@ int main(int argc, char *argv[]) {
     ssid_t remote;
     platform_init();
     DEBUG(STR("Initializing greet"));
-    if (!ssid_from_string("M7QQQ-2", &local))
+    if (!ssid_from_string("M7EPL-2", &local))
         panic("can't set local callsign");
-    if (!ssid_from_string("M7QQQ-1", &remote))
+    if (!ssid_from_string("2E0ITB-1", &remote))
         panic("can't set remote callsign");
     serial_init(argc, argv);
     greet_init(&local, &remote);

@@ -127,7 +127,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     /* Don't accept packets that are not to me. */
     ev.socket = dl_find_socket(&ev.address[current_dst], &ev.address[ADDR_SRC]);
     if (!ev.socket) {
-        DEBUG(STR("Frame has a destination of "), DBG_SSID(&ev.address[current_dst]), STR(", which has no listener, ignoring."));
+        DEBUG(STR("Frame has a destination of "), FMT_SSID(&ev.address[current_dst]), STR(", which has no listener, ignoring."));
         metric_inc(METRIC_NOT_ME);
         metric_inc_by(METRIC_NOT_ME_BYTES, pktlen);
         return;

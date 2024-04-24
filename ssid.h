@@ -28,7 +28,7 @@ void ssid_debug(const ssid_t *ssid);
 bool ssid_push(packet_t *packet, const ssid_t *ssid);
 bool ssid_cmp(const ssid_t *lhs, const ssid_t *rhs);
 
-struct debug_t debug_ssid(ssid_t *ssid);
-#define DBG_SSID(ssid) debug_ssid(ssid)
+struct format_t format_ssid(ssid_t *ssid);
+#define FMT_SSID(ssid) format_ssid(ssid)
 
 #endif

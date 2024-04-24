@@ -15,10 +15,10 @@ LIB= \
 PLATFORM?=platform-posix.o
 SERIAL?=serial-tty.o
 
-all: app-caseflip app-greet
+all: app-greet app-cli
 
-app-caseflip: app-caseflip.o libax25embed.a($(LIB)) $(PLATFORM) $(SERIAL)
 app-greet: app-greet.o libax25embed.a($(LIB)) $(PLATFORM) $(SERIAL)
+app-cli: app-cli.o libax25embed.a($(LIB)) $(PLATFORM) $(SERIAL) app-caseflip.o
 
 fuzz: CFLAGS+=-fsanitize=address,fuzzer
 fuzz: CC=clang-18
