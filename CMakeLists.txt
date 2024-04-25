@@ -9,3 +9,4 @@ add_subdirectory(platform)
 add_subdirectory(ax25)
 add_subdirectory(apps)
 
+install(TARGETS app-cli DESTINATION bin)
