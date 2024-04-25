@@ -35,6 +35,9 @@ duration_t duration_add(duration_t augend, duration_t addend);
 duration_t duration_sub(duration_t minuend, duration_t subtrahend);
 int64_t duration_as_micros(duration_t duration);
 int duration_cmp(duration_t lhs, duration_t rhs);
+static inline duration_t duration_min(duration_t lhs, duration_t rhs) {
+    return duration_cmp(lhs, rhs) < 0 ? lhs : rhs;
+}
 
 /* instant's represent an instant in time.  Their rate and epoch is unknown,
  * and generally are only interacted with via durations and instant_now() */
@@ -50,10 +53,7 @@ instant_t instant_add(instant_t base, duration_t offset);
 /* returns <0 0 or >0 depending on if lhs is < rhs, lhs == rhs, lhs > rhs */
 int instant_cmp(instant_t lhs, instant_t rhs);
 static inline instant_t instant_min(instant_t lhs, instant_t rhs) {
-    if (instant_cmp(lhs, rhs) < 0)
-        return lhs;
-    else
-        return rhs;
+    return instant_cmp(lhs, rhs) < 0 ? lhs : rhs;
 }
 
 #endif

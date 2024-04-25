@@ -4,11 +4,10 @@
  * A platform that speaks over a Unix TTY.
  */
 #define _POSIX_C_SOURCE 200809L
-#include "platform.h"
-#include "connection.h"
-#include "kiss.h"
 #include "serial.h"
-#include "ax25_dl.h"
+#include "platform-posix.h"
+#include "debug.h"
+//#include "ax25_dl.h"
 #include <sys/select.h>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -19,6 +18,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+
+void kiss_recv_byte(uint8_t port, uint8_t byte);
 
 
 static int serial_fd = -1;
@@ -84,31 +85,26 @@ void serial_putch(uint8_t serial, uint8_t data) {
     }
 }
 
+static void serial_got_ch(void) {
+    uint8_t data;
+    if (read(serial_fd, &data, sizeof(data)) != 1)
+        panic("cannot read");
+    kiss_recv_byte(0, data);
+}
+
+static fd_event_t serial_fd_event = {
+    .next = NULL,
+    .fd = -1,
+    .callback = serial_got_ch,
+};
+
 void serial_init(int argc, char *argv[]) {
     if (argc > 1) {
         serial_init_external(argv[1]);
     } else {
         serial_init_internal();
     }
-}
 
-void serial_wait(void) {
-    duration_t wait = DURATION_ZERO;
-    for (;;) {
-        uint8_t data;
-        fd_set rfd;
-        FD_ZERO(&rfd);
-        FD_SET(serial_fd, &rfd);
-        wait = conn_expire_timers();
-        int64_t wait_us = duration_as_micros(wait);
-        struct timeval timeout = { .tv_sec = wait_us / 1000000, .tv_usec = wait_us % 1000000 };
-        select(serial_fd+1, &rfd, NULL, NULL, &timeout);
-        if (FD_ISSET(serial_fd, &rfd)) {
-            if (read(serial_fd, &data, sizeof(data)) != 1)
-                panic("cannot read");
-            kiss_recv_byte(0, data);
-        }
-        conn_dequeue();
-    }
+    serial_fd_event.fd = serial_fd;
+    register_fd_event(&serial_fd_event);
 }
-

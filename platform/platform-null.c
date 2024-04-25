@@ -6,7 +6,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "platform.h"
 #include "debug.h"
-#include "time.h"
+#include "clock.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>

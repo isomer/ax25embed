@@ -3,7 +3,7 @@
  *
  * Implementations of helper functions for dealing with time, including instants and durations.
  */
-#include "time.h"
+#include "clock.h"
 
 const instant_t INSTANT_ZERO = { .instant = 0 };
 const duration_t DURATION_ZERO = { .duration = 0 };

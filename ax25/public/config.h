@@ -6,8 +6,6 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#define SSID 0
-
 enum {
     MAX_SOCKETS = 16,
     T3_DURATION_MINUTES = 15,

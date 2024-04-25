@@ -7,6 +7,7 @@
 #include "config.h"
 #include "ax25_dl.h"
 #include "metric.h"
+#include "platform.h"
 
 static connection_t conntbl[MAX_CONN] = { { .state = STATE_DISCONNECTED, }, };
 
@@ -68,7 +69,7 @@ void conn_release(connection_t *connection) {
     CHECK(instant_cmp(connection->t3_expiry, INSTANT_ZERO) == 0);
 }
 
-duration_t conn_expire_timers(void) {
+static duration_t conn_expire_timers(void) {
     instant_t now;
     instant_t next;
     bool triggered;
@@ -126,7 +127,7 @@ duration_t conn_expire_timers(void) {
     return instant_sub(next, now);
 }
 
-void conn_dequeue(void) {
+static duration_t conn_dequeue(void) {
     for(size_t i = 0; i < MAX_CONN; ++i) {
         if (conntbl[i].state == STATE_DISCONNECTED)
             continue;
@@ -139,4 +140,21 @@ void conn_dequeue(void) {
             ax25_dl_event(&ev);
         }
     }
+
+    return duration_seconds(3600);
+}
+
+static ticker_t conn_dequeue_ticker = {
+    .next = NULL,
+    .tick = conn_dequeue,
+};
+
+static ticker_t conn_expire_ticker = {
+    .next = NULL,
+    .tick = conn_expire_timers,
+};
+
+void ax25_init(void) {
+    register_ticker(&conn_expire_ticker);
+    register_ticker(&conn_dequeue_ticker);
 }

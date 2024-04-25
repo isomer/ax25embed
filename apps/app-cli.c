@@ -236,6 +236,6 @@ int main(int argc, char *argv[]) {
         do_cmd(NULL, init_script[it], my_strlen(init_script[it]));
     }
     DEBUG(STR("Running"));
-    serial_wait();
+    platform_run();
 }
 
