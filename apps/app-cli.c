@@ -230,8 +230,8 @@ static const uint8_t *init_script[] = {
 };
 
 int main(int argc, char *argv[]) {
-    platform_init();
-    serial_init(argc, argv);
+    platform_init(argc, argv);
+    ax25_init();
     for(size_t it = 0; init_script[it]; ++it) {
         do_cmd(NULL, init_script[it], my_strlen(init_script[it]));
     }

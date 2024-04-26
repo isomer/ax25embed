@@ -21,7 +21,7 @@ typedef struct ticker_t {
 void register_ticker(ticker_t *ticker_t);
 
 /* Called at startup to initialise the platform APIs. */
-void platform_init(void);
+void platform_init(int argc, char *argv[]);
 
 /* Runs the program, calling back for configured events. */
 void platform_run(void);

@@ -5,5 +5,4 @@
  */
 #include <stdint.h>
 
-void serial_init(int argc, char *argv[]);
 void serial_putch(uint8_t serial, uint8_t data);

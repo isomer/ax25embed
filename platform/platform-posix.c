@@ -94,6 +94,6 @@ void platform_run(void) {
 
 }
 
-void platform_init(void) {
-    /* Nothing to do for POSIX */
+void platform_init(int argc, char *argv[]) {
+    serial_init(argc, argv);
 }
