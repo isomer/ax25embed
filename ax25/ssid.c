@@ -12,7 +12,7 @@
 #include <string.h> // For memcmp
 
 bool ssid_from_string(const char *str, ssid_t *ssid) {
-    ssid->ssid[SSID_LEN-1] = '\x00';
+    ssid->ssid[SSID_LEN-1] = '\x00'; /* By default it's -0 */
 
     for(size_t i = 0; i < SSID_LEN-1; ++i) {
         switch (str[i]) {
@@ -26,7 +26,7 @@ bool ssid_from_string(const char *str, ssid_t *ssid) {
                 }
                 return true;
             default:
-                if (str[i] >= 'a' || str[i] <= 'z') {
+                if (str[i] >= 'a' && str[i] <= 'z') {
                     /* upper case */
                     ssid->ssid[i] = str[i] - 'a' + 'A';
                 } else {
