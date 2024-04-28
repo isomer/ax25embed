@@ -128,6 +128,7 @@ static duration_t conn_expire_timers(void) {
 }
 
 static duration_t conn_dequeue(void) {
+    duration_t duration = duration_seconds(3600);
     for(size_t i = 0; i < MAX_CONN; ++i) {
         if (conntbl[i].state == STATE_DISCONNECTED)
             continue;
@@ -138,10 +139,11 @@ static duration_t conn_dequeue(void) {
             ev.event = EV_DRAIN_SENDQ;
             ev.address_count = 0;
             ax25_dl_event(&ev);
+            duration = duration_millis(20);
         }
     }
 
-    return duration_seconds(3600);
+    return duration;
 }
 
 static ticker_t conn_dequeue_ticker = {
