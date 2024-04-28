@@ -11,10 +11,15 @@
 #include "platform.h"
 #include <string.h> // For memcmp
 
-bool ssid_from_string(const char *str, ssid_t *ssid) {
-    ssid->ssid[SSID_LEN-1] = '\x00'; /* By default it's -0 */
+static const ssid_t empty_ssid = {
+    .ssid = { ' ', ' ', ' ', ' ', ' ', ' ', '\x00' },
+};
 
-    for(size_t i = 0; i < SSID_LEN-1; ++i) {
+bool ssid_from_string(const char *str, ssid_t *ssid) {
+    *ssid = empty_ssid;
+
+    size_t i;
+    for(i = 0; i < SSID_LEN-1; ++i) {
         switch (str[i]) {
             case '-':
                 ssid->ssid[SSID_LEN-1] = str[i+1] - '0';
@@ -34,6 +39,9 @@ bool ssid_from_string(const char *str, ssid_t *ssid) {
                 }
                 break;
         }
+    }
+    if (str[i] == '-') {
+        ssid->ssid[SSID_LEN-1] = str[i+1] - '0';
     }
     return true;
 }

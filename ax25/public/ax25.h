@@ -8,7 +8,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
-typedef enum pid_t {
+typedef enum ax25_pid_t {
     PID_PLP             = 0x01, /* ISO 8208/CCITT X.25 PLP */
     PID_VJCOMPIP        = 0x06, /* Compressed TCP/IP packet.  Van Jacobson (RFC 1144) */
     PID_VJIP            = 0x07, /* Uncompressed TCP/IP packet.  Van Jacobson (RFC 1144) */
@@ -23,7 +23,7 @@ typedef enum pid_t {
     PID_NETROM          = 0xCF, /* NET/ROM */
     PID_NOL3            = 0xF0, /* No Layer 3 implemented */
     PID_ESCAPE          = 0xFF, /* Escape Character, next octet contains more L3 information */
-} pid_t;
+} ax25_pid_t;
 
 enum {
     FRAME_SABME = 0b01101111,

@@ -8,6 +8,7 @@
 #include "ax25_dl.h"
 #include "platform.h"
 #include "serial.h"
+#include "token.h"
 
 static void caseflip_error(dl_socket_t *sock, ax25_dl_error_t err) {
     (void) sock;
@@ -38,10 +39,18 @@ static void caseflip_connect(dl_socket_t *sock) {
     sock->on_disconnect = caseflip_disconnect;
 }
 
-void caseflip_init(ssid_t *ssid, uint8_t data[], size_t datalen) {
-    dl_socket_t *listener = dl_find_or_add_listener(ssid);
+void caseflip_init(token_t cmdline) {
+    token_t ssid;
+    if (!token_get_word(&cmdline, &ssid)) {
+        DEBUG(STR("Missing SSID"));
+        return;
+    }
+    ssid_t local;
+    if (!ssid_from_string((const char *)ssid.ptr, &local)) {
+        DEBUG(STR("Failed to parse SSID: "), LENSTR(ssid.ptr, ssid.len));
+        return;
+    }
+    dl_socket_t *listener = dl_find_or_add_listener(&local);
     listener->on_connect = caseflip_connect;
     listener->on_data = caseflip_data; /* unconnected data */
-    (void) data;
-    (void) datalen;
 }
