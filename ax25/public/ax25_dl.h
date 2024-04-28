@@ -36,7 +36,7 @@ typedef enum ax25_dl_error_t {
     ERR_H, /* (H is not defined)): Connection timed out while disconnecting */
     ERR_I, /* N2 timeouts: unacknowledged data. */
     ERR_J, /* N(r) sequence error. */
-    ERR_K, /* (K is not defined): FRMR received */
+    ERR_K, /* (K is not defined): Unexpected frame type received */
     ERR_L, /* Control field invalid or not implemented. */
     ERR_M, /* Information field was received in a U- or S-type frame. */
     ERR_N, /* Length of frame incorrect for frame type. */

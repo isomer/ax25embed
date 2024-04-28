@@ -30,8 +30,8 @@
  *    anywhere else, presumably it's just N1.  (Fixed in 2017)
  *  - "The Retries parameter field (PI=10) allows the negotiation of the retry
  *    count (N1)." should be N2.  (In both 1998 and 2017 versions)
- *  - DL ERROR indication (K) is not defined, but are used in multiple
- *    different errors? (Both)
+ *  - DL ERROR indication (K) is not defined, appears to be "unexpected frame
+ *    received" (Both)
  *  - DL ERROR indication (G) is not defined.  It is "connection timed out"
  *    (Both)
  *  - DL ERROR indication (H) is not defined.  It is "connection timed out
@@ -2043,7 +2043,7 @@ static const char *ax25_dl_errmsg[] = {
     [ERR_H] = "(H is not defiend): Connection timed out while disconnecting",
     [ERR_I] = "N2 timeouts: unacknowledged data.",
     [ERR_J] = "N(r) sequence error.",
-    [ERR_K] = "(K is not defined): FRMR received",
+    [ERR_K] = "(K is not defined): Unexpected frame received",
     [ERR_L] = "Control field invalid or not implemented.",
     [ERR_M] = "Information field was received in a U- or S-type frame.",
     [ERR_N] = "Length of frame incorrect for frame type.",
