@@ -537,12 +537,13 @@ static void nr_error_recovery(ax25_dl_event_t *ev) {
 
 
 static void transmit_inquiry(ax25_dl_event_t *ev) {
-    ev->p = true;
-    ev->nr = ev->conn->rcv_state;
+    ax25_dl_event_t tmpev = *ev;
+    tmpev.p = true;
+    tmpev.nr = ev->conn->rcv_state;
     if (ev->conn->self_busy) {
-        send_rnr(ev, TYPE_CMD, ev->f);
+        send_rnr(&tmpev, TYPE_CMD, ev->f);
     } else {
-        send_rr(ev, TYPE_CMD, ev->f);
+        send_rr(&tmpev, TYPE_CMD, ev->f);
     }
     ev->conn->ack_pending = false;
     timer_start_t1(ev);
@@ -550,11 +551,12 @@ static void transmit_inquiry(ax25_dl_event_t *ev) {
 }
 
 static void enquiry_response(ax25_dl_event_t *ev, bool f) {
-    ev->nr = ev->conn->rcv_state;
+    ax25_dl_event_t tmp_ev = *ev;
+    tmp_ev.nr = ev->conn->rcv_state;
     if (ev->conn->self_busy) {
-        send_rnr(ev, TYPE_RES, f);
+        send_rnr(&tmp_ev, TYPE_RES, f);
     } else {
-        send_rr(ev, TYPE_RES, f);
+        send_rr(&tmp_ev, TYPE_RES, f);
     }
     ev->conn->ack_pending = false;
     timer_stop_t2(ev);
@@ -1068,6 +1070,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 buffer_t *buf = pop_queue(ev->conn);
                 packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
                 kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
+                DEBUG(STR("send I"));
                 buffer_free(&buf);
                 if (ev->conn->sent_buffer[ev->ns]) {
                     packet_free(&ev->conn->sent_buffer[ev->ns]);
