@@ -6,6 +6,7 @@
  * Used for initial echo testing.
  */
 #include "ax25_dl.h"
+#include "debug.h"
 #include "platform.h"
 #include "serial.h"
 #include "token.h"

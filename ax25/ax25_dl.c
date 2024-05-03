@@ -1198,6 +1198,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
        case EV_RR:
             ev->conn->peer_busy = false;
+            DEBUG(STR("ack_state="), INT(ev->conn->ack_state), STR(" N(r)="), INT(ev->nr), STR(" snd_state="), INT(ev->conn->snd_state));
             check_need_for_response(ev);
             if (seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 check_i_frame_acked(ev);

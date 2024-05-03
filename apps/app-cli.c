@@ -26,7 +26,7 @@ void cli_output(dl_socket_t *sock, const char *msg, size_t len) {
     }
 }
 
-static void do_cmd(dl_socket_t *sock, token_t data) {
+void do_cmd(dl_socket_t *sock, token_t data) {
     token_t cmd;
     DEBUG(STR("Command: "), LENSTR(data.ptr, data.len));
 
@@ -98,6 +98,9 @@ void cli_init(token_t cmdline) {
 }
 
 static const char *init_script[] = {
+    "serial 2 console",
+    "serial 0 kiss",
+    "serial 1 kiss",
     "register cli 2E0ITB-1",
     "register caseflip 2E0ITB-2",
     NULL,
@@ -108,6 +111,7 @@ int main(int argc, char *argv[]) {
     ax25_init();
     cmd_connect_init();
     cmd_register_init();
+    cmd_serial_init();
     for(size_t it = 0; init_script[it]; ++it) {
         do_cmd(NULL, token_from_str(init_script[it]));
     }

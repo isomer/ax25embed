@@ -36,6 +36,45 @@ bool token_get_bytes(token_t *source, token_t *dest, size_t len) {
     return dest->len != 0;
 }
 
+static bool token_peek_byte(const token_t source, uint8_t *dest) {
+    if (source.len > 0) {
+        *dest = *source.ptr;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+static bool token_get_byte(token_t *source, uint8_t *dest) {
+    if (token_peek_byte(*source, dest)) {
+        source->ptr++;
+        source->len--;
+        return true;
+    } else {
+        return false;
+    }
+}
+
+bool token_get_u8(token_t *source, uint8_t *dest) {
+    bool ret = false;
+    uint8_t ch;
+    *dest = 0;
+    skipwhite(source);
+    while (token_peek_byte(*source, &ch) && ch >= '0' && ch <= '9') {
+        if (!token_get_byte(source, &ch))
+            return false;
+        if (*dest > UINT8_MAX / 10)
+            return false;
+        *dest *= 10;
+        if (*dest + ch - '0' < *dest)
+            return false;
+        *dest += ch - '0';
+        ret = true; /* We consumed at least one digit */
+    }
+
+    return ret;
+}
+
 static inline bool is_whitespace(uint8_t ch) {
     return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
 }

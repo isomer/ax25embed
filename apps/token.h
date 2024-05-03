@@ -31,4 +31,7 @@ void skipwhite(token_t *token);
 /* compare two tokens, return <0 if lhs<rhs, 0 if lhs==rhs, >0 if lhs>rhs */
 ssize_t token_cmp(const token_t lhs, const token_t rhs);
 
+/* Read a uint8_t from the token, returning false on failure */
+bool token_get_u8(token_t *source, uint8_t *dest);
+
 #endif

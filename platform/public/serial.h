@@ -3,6 +3,12 @@
  *
  * Platform specific serial definitions.
  */
+#ifndef SERIAL_H
+#define SERIAL_H
 #include <stdint.h>
 
 void serial_putch(uint8_t serial, uint8_t data);
+void register_serial(uint8_t device, void (*rx)(uint8_t device, uint8_t ch), bool debug);
+void serial_recv_byte(uint8_t device, uint8_t byte);
+
+#endif

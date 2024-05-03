@@ -30,5 +30,6 @@ void register_cmd(command_t *command);
 
 void cmd_connect_init(void);
 void cmd_register_init(void);
+void cmd_serial_init(void);
 
 #endif

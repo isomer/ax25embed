@@ -36,10 +36,6 @@ instant_t instant_now(void) {
     return (instant_t) { .instant = ts.tv_sec * TIME_BASE + ts.tv_nsec, };
 }
 
-void debug_putch(char ch) {
-    putchar(ch);
-}
-
 void debug_putbuf(const char *buf, size_t buflen) {
     for(size_t i=0; i<buflen; ++i) {
         debug_putch(buf[i]);
