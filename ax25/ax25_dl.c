@@ -1301,7 +1301,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
             if (ev->ns == ev->conn->rcv_state) {
                 /* Happy path: We just received a frame that was in sequence */
-                ev->conn->rcv_state = (ev->conn->rcv_state + 1) % ev->conn->window_size;
+                ev->conn->rcv_state = (ev->conn->rcv_state + 1) % ev->conn->modulo;
                 ev->conn->rej_exception = false;
                 if (ev->conn->srej_exception > 0)
                     ev->conn->srej_exception--;
@@ -1313,7 +1313,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
                     dl_data_indication(ev, buf->buffer, buf->len);
                     buffer_free(&buf);
-                    ev->conn->rcv_state = (ev->conn->rcv_state + 1) % (ev->conn->window_size);
+                    ev->conn->rcv_state = (ev->conn->rcv_state + 1) % (ev->conn->modulo);
                 }
 
                 if (ev->p) {
@@ -1364,7 +1364,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 break;
             }
 
-            if (ev->ns == (ev->conn->rcv_state + 1) % (ev->conn->window_size)) {
+            if (ev->ns == (ev->conn->rcv_state + 1) % (ev->conn->modulo)) {
                 ev->nr = ev->conn->rcv_state;
                 ev->f = true;
                 ev->conn->srej_exception += 1;
@@ -1764,7 +1764,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
 
             if (ev->ns == ev->conn->rcv_state) {
                 /* Happy path: We just received a frame that was in sequence */
-                ev->conn->rcv_state = (ev->conn->rcv_state + 1) % ev->conn->window_size;
+                ev->conn->rcv_state = (ev->conn->rcv_state + 1) % ev->conn->modulo;
                 ev->conn->rej_exception = false;
                 if (ev->conn->srej_exception > 0)
                     ev->conn->srej_exception--;
@@ -1776,7 +1776,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
 
                     dl_data_indication(ev, buf->buffer, buf->len);
                     buffer_free(&buf);
-                    ev->conn->rcv_state = (ev->conn->rcv_state + 1) % (ev->conn->window_size);
+                    ev->conn->rcv_state = (ev->conn->rcv_state + 1) % (ev->conn->modulo);
                 }
 
                 if (ev->p) {
@@ -1791,7 +1791,7 @@ static void ax25_dl_timer_recovery(ax25_dl_event_t *ev) {
                 break;
             }
 
-            if (ev->ns == (ev->conn->rcv_state + 1) % (ev->conn->window_size)) {
+            if (ev->ns == (ev->conn->rcv_state + 1) % (ev->conn->modulo)) {
                 ev->nr = ev->conn->rcv_state;
                 ev->f = true;
                 ev->conn->srej_exception += 1;
