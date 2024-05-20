@@ -52,6 +52,8 @@
  *  - I think that when processing REJ and SREJ when checking V(a) <= N(r) <=
  *    V(s) it should instead be V(a) <= N(r) < V(s) otherwise you can end up
  *    attempting to retransmit a frame that's not been sent yet. (Both).
+ *  - AX.25 state machine will retransmit an unacknowledged tail infinitely, but gives up
+ *    after N1 attempts when retransmitting any other part of the data (Both).
  */
 #include "ax25_dl.h"
 #include "ax25.h"
