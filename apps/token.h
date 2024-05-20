@@ -7,6 +7,7 @@
 #define TOKEN_H
 #include <sys/types.h>
 #include <stdint.h>
+#include "ssid.h"
 
 /* A token object, similar to rust's &[u8], or C++'s std::string_view */
 typedef struct token_t {
@@ -33,5 +34,7 @@ ssize_t token_cmp(const token_t lhs, const token_t rhs);
 
 /* Read a uint8_t from the token, returning false on failure */
 bool token_get_u8(token_t *source, uint8_t *dest);
+
+bool token_get_ssid(token_t *source, ssid_t *ssid);
 
 #endif

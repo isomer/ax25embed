@@ -103,3 +103,11 @@ ssize_t token_cmp(const token_t lhs, const token_t rhs) {
     return (ssize_t)rhs.len - (ssize_t)lhs.len;
 }
 
+bool token_get_ssid(token_t *source, ssid_t *ssid) {
+    token_t ssid_token;
+    if (!token_get_word(source, &ssid_token)) {
+        DEBUG(STR("Failed to get word"));
+        return false;
+    }
+    return ssid_from_string((const char *)ssid_token.ptr, ssid);
+}
