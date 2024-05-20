@@ -5,6 +5,7 @@
  */
 #include "kiss.h"
 #include "ax25.h"
+#include "capture.h"
 #include "config.h"
 #include "debug.h"
 #include "metric.h"
@@ -167,6 +168,7 @@ static void kiss_xmit_byte(uint8_t serial, uint8_t byte) {
 
 uint16_t kiss_xmit(uint8_t port, uint8_t *buffer, size_t len) {
     uint16_t id;
+    capture_trigger(DIR_OUT, buffer, len);
     do {
         id = next_id++;
     } while (id == 0);

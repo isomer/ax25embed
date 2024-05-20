@@ -5,6 +5,7 @@
  */
 #include "ax25.h"
 #include "ax25_dl.h"
+#include "capture.h"
 #include "connection.h"
 #include "debug.h"
 #include "kiss.h"
@@ -128,6 +129,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     ev.socket = dl_find_socket(&ev.address[current_dst], &ev.address[ADDR_SRC]);
     if (!ev.socket) {
         DEBUG(STR("Frame has a destination of "), FMT_SSID(&ev.address[current_dst]), STR(", which has no listener, ignoring."));
+        capture_trigger(DIR_OTHER, pkt, pktlen);
         metric_inc(METRIC_NOT_ME);
         metric_inc_by(METRIC_NOT_ME_BYTES, pktlen);
         return;
@@ -136,6 +138,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     /* Am I being asked to digipeat this packet? */
     if (current_dst != ADDR_DST) {
         DEBUG(STR("refused digipeat"));
+        capture_trigger(DIR_OTHER, pkt, pktlen);
         metric_inc(METRIC_REFUSED_DIGIPEAT);
         return;
     }
@@ -151,6 +154,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
 
     uint8_t control;
     if (!pkt_peek(pkt, pktlen, &offset, &control)) {
+        capture_trigger(DIR_IN, pkt, pktlen);
         metric_inc(METRIC_UNDERRUN);
         return;
     }
@@ -242,6 +246,7 @@ void ax25_recv_ackmode(uint8_t port, uint16_t id, const uint8_t pkt[], size_t pk
     ev.info = &pkt[offset];
     ev.info_len = pktlen - offset;
 
+    capture_trigger(DIR_IN, pkt, pktlen);
     ax25_dl_event(&ev);
 
     return;
