@@ -4,6 +4,7 @@
  * Additional platform apis that rely on posix
  */
 #define _POSIX_C_SOURCE 200809L
+#include "capture.h"
 #include "platform-posix.h"
 #include "debug.h"
 #include "clock.h"
@@ -92,4 +93,5 @@ void platform_run(void) {
 
 void platform_init(int argc, char *argv[]) {
     serial_init(argc, argv);
+    pcap_init();
 }

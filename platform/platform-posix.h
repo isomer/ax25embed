@@ -18,5 +18,7 @@ void register_fd_event(fd_event_t *event);
 
 void serial_init(int argc, char *argv[]);
 
+void pcap_init(void);
+
 #endif
 
