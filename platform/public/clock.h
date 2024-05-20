@@ -34,6 +34,7 @@ duration_t duration_mul(duration_t multiplier, int multiplicand);
 duration_t duration_add(duration_t augend, duration_t addend);
 duration_t duration_sub(duration_t minuend, duration_t subtrahend);
 int64_t duration_as_micros(duration_t duration);
+int64_t duration_as_millis(duration_t duration);
 int duration_cmp(duration_t lhs, duration_t rhs);
 static inline duration_t duration_min(duration_t lhs, duration_t rhs) {
     return duration_cmp(lhs, rhs) < 0 ? lhs : rhs;

@@ -66,3 +66,7 @@ int duration_cmp(duration_t lhs, duration_t rhs) {
 int64_t duration_as_micros(duration_t duration) {
     return duration.duration * INT64_C(1000000) / TIME_BASE;
 }
+
+int64_t duration_as_millis(duration_t duration) {
+    return duration.duration * INT64_C(1000) / TIME_BASE;
+}
