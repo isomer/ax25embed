@@ -53,8 +53,11 @@ void debug_putbuf(const char *buf, size_t buflen);
 #define FORMAT4(buffer, buffer_len, v, ...) FORMAT1(buffer, buffer_len, v); FORMAT3(buffer, buffer_len, __VA_ARGS__)
 #define FORMAT5(buffer, buffer_len, v, ...) FORMAT1(buffer, buffer_len, v); FORMAT4(buffer, buffer_len, __VA_ARGS__)
 #define FORMAT6(buffer, buffer_len, v, ...) FORMAT1(buffer, buffer_len, v); FORMAT5(buffer, buffer_len, __VA_ARGS__)
+#define FORMAT7(buffer, buffer_len, v, ...) FORMAT1(buffer, buffer_len, v); FORMAT6(buffer, buffer_len, __VA_ARGS__)
+#define FORMAT8(buffer, buffer_len, v, ...) FORMAT1(buffer, buffer_len, v); FORMAT7(buffer, buffer_len, __VA_ARGS__)
+#define FORMAT9(buffer, buffer_len, v, ...) FORMAT1(buffer, buffer_len, v); FORMAT8(buffer, buffer_len, __VA_ARGS__)
 
-#define FORMAT_COUNT_ARGS(a1, a2, a3, a4, a5, a6, cmd, ...) cmd
+#define FORMAT_COUNT_ARGS(a1, a2, a3, a4, a5, a6, a7, a8, a9, cmd, ...) cmd
 
 /* How to use this macro, give it up to 6 arguments.  each argument must be a
  * macro saying the type of argument and it's value.  This should be type safe
@@ -65,7 +68,7 @@ void debug_putbuf(const char *buf, size_t buflen);
  */
 #define FORMAT(buffer, buffer_len, ...) \
     do { \
-        FORMAT_COUNT_ARGS(__VA_ARGS__, FORMAT6, FORMAT5, FORMAT4, FORMAT3, FORMAT2, FORMAT1)((buffer), (buffer_len), __VA_ARGS__); \
+        FORMAT_COUNT_ARGS(__VA_ARGS__, FORMAT9, FORMAT8, FORMAT7, FORMAT6, FORMAT5, FORMAT4, FORMAT3, FORMAT2, FORMAT1)((buffer), (buffer_len), __VA_ARGS__); \
         format_internal_eol((buffer), (buffer_len)); \
     } while(0)
 
