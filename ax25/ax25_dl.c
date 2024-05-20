@@ -1058,12 +1058,10 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
         case EV_DRAIN_SENDQ:
             if (ev->conn->peer_busy) {
-                DEBUG(STR("peer busy, not transmitting"));
                 /* Leave sendq buffer on queue */
             } else if (ev->conn->snd_state == ev->conn->ack_state + ev->conn->window_size) {
                 /* Leave sendq buffer on queue */
                 CHECK(ev->conn->window_size > 0);
-                DEBUG(STR("window full, not transmitting"));
             } else {
                 ev->ns = ev->conn->snd_state;
                 ev->nr = ev->conn->rcv_state;
@@ -1200,7 +1198,6 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
 
        case EV_RR:
             ev->conn->peer_busy = false;
-            DEBUG(STR("ack_state="), INT(ev->conn->ack_state), STR(" N(r)="), INT(ev->nr), STR(" snd_state="), INT(ev->conn->snd_state));
             check_need_for_response(ev);
             if (seqno_in_range_incl(ev->conn->ack_state, ev->nr, ev->conn->snd_state)) {
                 check_i_frame_acked(ev);
@@ -2024,7 +2021,7 @@ static const char *ax25_dl_strevent(ax25_dl_event_type_t ev) {
 }
 
 void ax25_dl_event(ax25_dl_event_t *ev) {
-    DEBUG(D8(conn_get_state(ev->conn)), STR(": "), STR(ax25_dl_strevent(ev->event)));
+    //DEBUG(D8(conn_get_state(ev->conn)), STR(": "), STR(ax25_dl_strevent(ev->event)));
     switch (conn_get_state(ev->conn)) {
         case STATE_DISCONNECTED: ax25_dl_disconnected(ev); break;
         case STATE_AWAITING_CONNECTION: ax25_dl_awaiting_connection(ev); break;
