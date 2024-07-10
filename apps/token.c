@@ -86,6 +86,7 @@ void skipwhite(token_t *token) {
 }
 
 bool token_get_word(token_t *source, token_t *dest) {
+    skipwhite(source);
     dest->ptr = source->ptr;
     dest->len = 0;
     while (source->len > 0 && !is_whitespace(*source->ptr)) {
