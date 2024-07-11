@@ -6,47 +6,15 @@
 #include "app-cli.h"
 #include "ax25.h"
 #include "ax25_dl.h"
+#include "cmd.h"
 #include "debug.h"
 #include "platform.h"
 #include "serial.h"
 #include <string.h> // for memcmp
 
-static command_t *commands = NULL;
-
-void register_cmd(command_t *command) {
-    command->next = commands;
-    commands = command;
-}
-
-void cli_output(dl_socket_t *sock, const char *msg, size_t len) {
-    if (sock) {
-        dl_send(sock, msg, len);
-    } else {
-        DEBUG(LENSTR(&msg[1], len-2)); /* skip the PID and truncate the \n */
-    }
-}
-
-void do_cmd(dl_socket_t *sock, token_t data) {
-    token_t cmd;
-    DEBUG(STR("Command: "), LENSTR(data.ptr, data.len));
-
-    skipwhite(&data);
-    if (!token_get_word(&data, &cmd)) {
-        OUTPUT(sock, STR("Failed to read command"));
-        return;
-    }
-
-    for(command_t *it = commands; it; it=it->next) {
-        if (token_cmp(cmd, token_from_str(it->name)) == 0) {
-            it->cmd(sock, data);
-            return;
-        }
-    }
-
-    OUTPUT(sock, STR("Unknown command: ["), LENSTR(cmd.ptr, cmd.len), STR("]"));
-}
-
 static void cli_data(dl_socket_t *sock, const uint8_t *data, size_t datalen) {
+    terminal_t *term = terminal_find_from_sock(sock);
+
     token_t cmd = token_new(data, datalen);
     token_t pid;
 
@@ -55,9 +23,10 @@ static void cli_data(dl_socket_t *sock, const uint8_t *data, size_t datalen) {
         return;
     }
 
+
     switch (*pid.ptr) {
         case PID_NOL3:
-            do_cmd(sock, cmd);
+            terminal_rx(term, cmd);
             break;
         default:
             DEBUG(STR("Unexpected PID="), X8(*pid.ptr));
@@ -80,17 +49,14 @@ static void cli_connect(dl_socket_t *sock) {
     sock->on_error = cli_error;
     sock->on_data = cli_data;
     sock->on_disconnect = cli_disconnect;
+    terminal_t *term = terminal_find_or_allocate_from_sock(sock);
+    term->rx = cmd_run;
 }
 
 void cli_init(token_t cmdline) {
-    token_t ssid;
-    if (!token_get_word(&cmdline, &ssid)) {
-        DEBUG(STR("Missing SSID"));
-        return;
-    }
     ssid_t local;
-    if (!ssid_from_string((const char *)ssid.ptr, &local)) {
-        DEBUG(STR("Failed to parse SSID: "), LENSTR(ssid.ptr, ssid.len));
+    if (!token_get_ssid(&cmdline, &local)) {
+        DEBUG(STR("Failed to parse SSID"));
         return;
     }
     dl_socket_t *listener = dl_find_or_add_listener(&local);
@@ -112,8 +78,9 @@ int main(int argc, char *argv[]) {
     cmd_connect_init();
     cmd_register_init();
     cmd_serial_init();
+    terminal_t *term = terminal_get_null();
     for(size_t it = 0; init_script[it]; ++it) {
-        do_cmd(NULL, token_from_str(init_script[it]));
+        cmd_run(term, token_from_str(init_script[it]));
     }
     DEBUG(STR("Running"));
     platform_run();

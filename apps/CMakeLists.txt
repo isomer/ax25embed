@@ -5,13 +5,15 @@ project(ax25embed
 )
 
 add_executable(app-cli
-    app-cli.c
     app-caseflip.c
+    app-cli.c
     cmd-connect.c
     cmd-register.c
     cmd-serial.c
-    token.c
+    cmd.c
     console.c
+    token.c
+    tty.c
 )
 
 target_link_libraries(app-cli ax25)

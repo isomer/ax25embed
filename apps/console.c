@@ -3,26 +3,32 @@
  *
  * A basic "serial console"
  */
+#include "console.h"
+#include "ax25.h"
+#include "debug.h"
+#include "serial.h"
 #include "token.h"
+#include "tty.h"
 #include <stddef.h>
 
-static uint8_t console_buf[1024];
-static uint8_t *console_ptr = console_buf;
+static uint8_t console_buf[1024] = {0, };
+static uint8_t *console_ptr = &console_buf[0];
 
 static size_t console_len(void) {
     return console_ptr - console_buf;
 }
 
+
 void console_recv_byte(uint8_t device, uint8_t ch) {
+    terminal_t *term = terminal_find_from_serial(device);
     switch (ch) {
         case '\r':
         case '\n':
-            /* TODO: What happens if I have two consoles? */
-            do_cmd(NULL, (token_t) {
+            terminal_rx(term, (token_t) {
                     .ptr = console_buf,
                     .len = console_len(),
                     });
-            console_ptr = console_buf;
+            console_ptr = &console_buf[0];
             break;
         /* TODO: Do I need to handle ^U, ^G, ^H etc? */
         default:

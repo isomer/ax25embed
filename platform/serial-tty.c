@@ -87,7 +87,6 @@ static void serial_got_ch(int serial) {
     if (read(serial_fd[serial], &data, sizeof(data)) != 1)
         panic("cannot read");
     serial_recv_byte(serial, data);
-    //kiss_recv_byte(serial, data);
 }
 
 static void serial_got_ch0(void) { serial_got_ch(0); }

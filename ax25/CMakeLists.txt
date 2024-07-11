@@ -6,6 +6,7 @@ add_library(ax25 STATIC
 	 ax25_dl.c
 	 ax25.c
 	 buffer.c
+     capture.c
 	 connection.c
 	 kiss.c
 	 metric.c

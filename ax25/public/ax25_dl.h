@@ -95,7 +95,7 @@ typedef struct ax25_dl_event_t {
     uint8_t nr;
     uint8_t ns;
     const uint8_t *info;
-    uint8_t info_len;
+    size_t info_len;
     bool p;
     bool f;
     ssid_t address[MAX_ADDRESSES];

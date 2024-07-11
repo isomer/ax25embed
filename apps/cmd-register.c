@@ -7,9 +7,7 @@
 #include "ax25.h"
 #include "ax25_dl.h"
 #include "token.h"
-
-extern void caseflip_init(token_t cmdline);
-static void cli_init(token_t cmdline);
+#include "cmd.h"
 
 static const struct apps_t {
     const char *name;
@@ -20,14 +18,14 @@ static const struct apps_t {
     { NULL, NULL },
 };
 
-static void cmd_register(dl_socket_t *sock, token_t cmdline) {
+static void cmd_register(terminal_t *term, token_t cmdline) {
     const char *help = "register <app> ...\n";
     token_t app;
 
     skipwhite(&cmdline);
 
     if (!token_get_word(&cmdline, &app)) {
-        OUTPUT(sock, STR(help));
+        OUTPUT(term, STR(help));
         return;
     }
 
@@ -40,7 +38,7 @@ static void cmd_register(dl_socket_t *sock, token_t cmdline) {
         }
     }
 
-    OUTPUT(sock, STR("Unknown app: "), LENSTR(app.ptr, app.len));
+    OUTPUT(term, STR("Unknown app: "), LENSTR(app.ptr, app.len));
 
     return;
 }

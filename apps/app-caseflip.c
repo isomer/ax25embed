@@ -5,6 +5,7 @@
  *
  * Used for initial echo testing.
  */
+#include "app-cli.h"
 #include "ax25_dl.h"
 #include "debug.h"
 #include "platform.h"
@@ -41,14 +42,10 @@ static void caseflip_connect(dl_socket_t *sock) {
 }
 
 void caseflip_init(token_t cmdline) {
-    token_t ssid;
-    if (!token_get_word(&cmdline, &ssid)) {
-        DEBUG(STR("Missing SSID"));
-        return;
-    }
     ssid_t local;
-    if (!ssid_from_string((const char *)ssid.ptr, &local)) {
-        DEBUG(STR("Failed to parse SSID: "), LENSTR(ssid.ptr, ssid.len));
+    skipwhite(&cmdline);
+    if (!token_get_ssid(&cmdline, &local)) {
+        DEBUG(STR("caseflip: Failed to parse SSID"));
         return;
     }
     dl_socket_t *listener = dl_find_or_add_listener(&local);

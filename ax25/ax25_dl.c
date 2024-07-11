@@ -207,7 +207,7 @@ static void push_i_control(packet_t *pkt, uint8_t modulo, bool p, uint8_t nr, ui
 
 static void send_dm(ax25_dl_event_t *ev, bool f, bool expedited) {
     (void) expedited;
-    DEBUG(STR("sending dm"));
+    //DEBUG(STR("sending dm"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, TYPE_RES);
@@ -218,7 +218,7 @@ static void send_dm(ax25_dl_event_t *ev, bool f, bool expedited) {
 }
 
 static void send_ui(ax25_dl_event_t *ev, type_t type) {
-    DEBUG(STR("sending ui"));
+    //DEBUG(STR("sending ui"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
@@ -230,7 +230,7 @@ static void send_ui(ax25_dl_event_t *ev, type_t type) {
 
 static void send_ua(ax25_dl_event_t *ev, bool expedited) {
     (void) expedited;
-    DEBUG(STR("sending ua"));
+    //DEBUG(STR("sending ua"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, TYPE_RES);
@@ -241,7 +241,7 @@ static void send_ua(ax25_dl_event_t *ev, bool expedited) {
 }
 
 static void send_sabm(ax25_dl_event_t *ev, bool f) {
-    DEBUG(STR("sending sabm"));
+    //DEBUG(STR("sending sabm"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, TYPE_CMD);
@@ -252,7 +252,7 @@ static void send_sabm(ax25_dl_event_t *ev, bool f) {
 }
 
 static void send_sabme(ax25_dl_event_t *ev, bool f) {
-    DEBUG(STR("sending sabme"));
+    //DEBUG(STR("sending sabme"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, TYPE_CMD);
@@ -263,7 +263,7 @@ static void send_sabme(ax25_dl_event_t *ev, bool f) {
 }
 
 static void send_disc(ax25_dl_event_t *ev, bool f) {
-    DEBUG(STR("sending disc"));
+    //DEBUG(STR("sending disc"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, TYPE_CMD);
@@ -274,7 +274,7 @@ static void send_disc(ax25_dl_event_t *ev, bool f) {
 }
 
 static void send_test(ax25_dl_event_t *ev, type_t type, bool f) {
-    DEBUG(STR("sending test"));
+    //DEBUG(STR("sending test"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
@@ -286,7 +286,7 @@ static void send_test(ax25_dl_event_t *ev, type_t type, bool f) {
 }
 
 static void send_srej(ax25_dl_event_t *ev, type_t type) {
-    DEBUG(STR("sending srej"));
+    //DEBUG(STR("sending srej"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
@@ -297,7 +297,7 @@ static void send_srej(ax25_dl_event_t *ev, type_t type) {
 }
 
 static void send_rej(ax25_dl_event_t *ev, type_t type) {
-    DEBUG(STR("sending rej"));
+    //DEBUG(STR("sending rej"));
     packet_t *pkt = packet_allocate();
 
     push_reply_addrs(ev, pkt, type);
@@ -308,7 +308,7 @@ static void send_rej(ax25_dl_event_t *ev, type_t type) {
 }
 
 static void send_rr(ax25_dl_event_t *ev, type_t type, bool f) {
-    DEBUG(STR("sending rr"));
+    //DEBUG(STR("sending rr"));
 
     packet_t *pkt = packet_allocate();
 
@@ -320,7 +320,7 @@ static void send_rr(ax25_dl_event_t *ev, type_t type, bool f) {
 }
 
 static void send_rnr(ax25_dl_event_t *ev, type_t type, bool f) {
-    DEBUG(STR("sending rnr"));
+    //DEBUG(STR("sending rnr"));
 
     packet_t *pkt = packet_allocate();
 
@@ -1070,7 +1070,7 @@ static void ax25_dl_connected(ax25_dl_event_t *ev) {
                 buffer_t *buf = pop_queue(ev->conn);
                 packet_t *pkt = construct_i(ev, buf->buffer, buf->len, ev->nr);
                 kiss_xmit(ev->conn->port, pkt->buffer, pkt->len);
-                DEBUG(STR("send I"));
+                //DEBUG(STR("send I"));
                 buffer_free(&buf);
                 if (ev->conn->sent_buffer[ev->ns]) {
                     packet_free(&ev->conn->sent_buffer[ev->ns]);

@@ -24,8 +24,9 @@ void register_serial(uint8_t device, void (*rx)(uint8_t device, uint8_t ch), boo
 
 void serial_recv_byte(uint8_t device, uint8_t byte) {
     CHECK(device < MAX_DEVICES);
-    if (device2vserial[device].rx)
+    if (device2vserial[device].rx) {
         device2vserial[device].rx(device, byte);
+    }
 }
 
 void debug_putch(char ch) {
