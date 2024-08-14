@@ -14,9 +14,9 @@ typedef struct ticker_t {
     duration_t (*tick)(void);
 } ticker_t;
 
-/* A ticker is a function that will be called every "tick", it can return a
- * hint of how long the process should sleep until the next tick, when all ticker
- * functions will be called again.
+/** A ticker is a function that will be called every "tick".
+ * The function can return a hint of how long the process should sleep until
+ * the next tick, when all ticker functions will be called again.
  */
 void register_ticker(ticker_t *ticker_t);
 
