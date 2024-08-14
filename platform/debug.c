@@ -70,3 +70,9 @@ bool format_internal_eol(char **buffer, size_t *buffer_len) {
     return format_putch(buffer, buffer_len, '\n');
 }
 
+void debug_putbuf(const char *buf, size_t buflen) {
+    for(size_t i=0; i<buflen; ++i) {
+        debug_putch(buf[i]);
+    }
+}
+

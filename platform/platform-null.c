@@ -22,16 +22,19 @@ instant_t instant_now(void) {
     return (instant_t) { .instant = ts.tv_sec * TIME_BASE + ts.tv_nsec, };
 }
 
-void debug_putch(char ch) {
-    (void)ch;
-    /* Dont output status messages */
-}
-
 void panic(const char *msg) {
     DEBUG(STR(msg));
     abort();
 }
 
-void platform_init(void) {
+void register_ticker(ticker_t *ticker) {
+    /* Don't ever run any tickers */
+}
+
+void platform_init(int argc, char *argv[]) {
     /* Nothing to do for POSIX */
+}
+
+void platform_run(void) {
+    /* Don't do anytihng */
 }

@@ -14,7 +14,8 @@ add_library(ax25 STATIC
 	 ssid.c
 )
 
-target_include_directories(platform PUBLIC public)
+target_include_directories(platform-posix PUBLIC public)
+target_include_directories(platform-null PUBLIC public)
 
 target_link_libraries(ax25 platform)
 
