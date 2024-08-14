@@ -67,8 +67,8 @@ static const char *init_script[] = {
     "serial 2 console",
     "serial 0 kiss",
     "serial 1 kiss",
-    "register cli 2E0ITB-1",
-    "register caseflip 2E0ITB-2",
+//  "register cli NOCALL-1",
+//  "register caseflip NOCALL-2",
     NULL,
 };
 
