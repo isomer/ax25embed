@@ -2,6 +2,7 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Implementations of helper functions for dealing with time, including instants and durations.
+ * These functions should be generic for all platforms.
  */
 #include "clock.h"
 
@@ -41,6 +42,14 @@ duration_t duration_seconds(int seconds) {
 
 duration_t duration_millis(int millis) {
     return (duration_t) { .duration = millis * (TIME_BASE / INT64_C(1000)), };
+}
+
+duration_t duration_micros(int64_t micros) {
+    return (duration_t) { .duration = micros * (TIME_BASE / INT64_C(1000000)), };
+}
+
+duration_t duration_nanos(int64_t nanos) {
+    return (duration_t) { .duration = nanos * (TIME_BASE / INT64_C(1000000000)), };
 }
 
 duration_t duration_div(duration_t numerator, int denominator) {

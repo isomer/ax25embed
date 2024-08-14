@@ -29,6 +29,8 @@ extern const duration_t DURATION_ZERO;
 duration_t duration_minutes(int minutes);
 duration_t duration_seconds(int seconds);
 duration_t duration_millis(int millis);
+duration_t duration_micros(int64_t micros);
+duration_t duration_nanos(int64_t nanos);
 duration_t duration_div(duration_t numerator, int denominator);
 duration_t duration_mul(duration_t multiplier, int multiplicand);
 duration_t duration_add(duration_t augend, duration_t addend);

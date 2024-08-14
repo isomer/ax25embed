@@ -13,8 +13,6 @@
 #include <stdlib.h>
 #include <time.h>
 
-#define TIME_BASE INT64_C(1000000000)
-
 static ticker_t *tickers = NULL;
 static fd_event_t *fd_events = NULL;
 
@@ -34,7 +32,10 @@ instant_t instant_now(void) {
         panic("clock_gettime(CLOCK_MONOTONIC)");
     }
 
-    return (instant_t) { .instant = ts.tv_sec * TIME_BASE + ts.tv_nsec, };
+    return instant_add(INSTANT_ZERO,
+            duration_add(
+                duration_seconds(ts.tv_sec),
+                duration_nanos(ts.tv_nsec)));
 }
 
 void panic(const char *msg) {
