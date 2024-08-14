@@ -22,6 +22,7 @@
 typedef struct command_t {
     struct command_t *next;
     const char *name;
+    const char *help;
     void (*cmd)(terminal_t *term, token_t cmdline);
 } command_t;
 

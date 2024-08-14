@@ -15,6 +15,7 @@ void caseflip_init(token_t cmdline);
 void cli_output(dl_socket_t *sock, const char *msg, size_t len);
 
 void cmd_connect_init(void);
+void cmd_help_init(void);
 void cmd_register_init(void);
 void cmd_serial_init(void);
 

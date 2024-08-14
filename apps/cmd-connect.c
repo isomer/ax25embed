@@ -80,6 +80,7 @@ static void cmd_connect(terminal_t *term, token_t cmdline) {
 static command_t command_connect = {
     .next = NULL,
     .name = "connect",
+    .help = "connect <local ssid> <remote ssid> <portnum>",
     .cmd = cmd_connect,
 };
 

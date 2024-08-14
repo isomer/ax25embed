@@ -5,7 +5,7 @@
  */
 #include "cmd.h"
 
-static command_t *commands = NULL;
+command_t *commands = NULL;
 
 void register_cmd(command_t *command) {
     command->next = commands;

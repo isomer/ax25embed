@@ -42,6 +42,7 @@ static void cmd_serial(terminal_t *term, token_t cmdline) {
 static command_t command_serial = {
     .next = NULL,
     .name = "serial",
+    .help = "serial <portnum> <protocol>",
     .cmd = cmd_serial,
 };
 

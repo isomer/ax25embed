@@ -78,6 +78,7 @@ int main(int argc, char *argv[]) {
     cmd_connect_init();
     cmd_register_init();
     cmd_serial_init();
+    cmd_help_init();
     terminal_t *term = terminal_get_null();
     for(size_t it = 0; init_script[it]; ++it) {
         cmd_run(term, token_from_str(init_script[it]));

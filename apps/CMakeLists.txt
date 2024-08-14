@@ -8,6 +8,7 @@ add_executable(app-cli
     app-caseflip.c
     app-cli.c
     cmd-connect.c
+    cmd-help.c
     cmd-register.c
     cmd-serial.c
     cmd.c

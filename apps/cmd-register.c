@@ -46,6 +46,7 @@ static void cmd_register(terminal_t *term, token_t cmdline) {
 static command_t command_register = {
     .next = NULL,
     .name = "register",
+    .help = "register <appname> [<args>...]",
     .cmd = cmd_register,
 };
 
