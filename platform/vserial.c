@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: GPL-3.0-or-later
  *
  * Indirection layer between physical devices and the serial protocols.
+ *
+ * These function should not need to change between platforms.
  */
 #include "debug.h"
 #include "serial.h"
