@@ -575,7 +575,7 @@ static void invoke_retransmission(ax25_dl_event_t *ev) {
 }
 
 static void select_t1(ax25_dl_event_t *ev) {
-    if (ev->conn->rc) {
+    if (ev->conn->rc == 0) {
         duration_t srtt = duration_mul(ev->conn->srtt, 7);
         srtt = duration_add(srtt, ev->conn->t1v);
         srtt = duration_sub(srtt, ev->conn->t1_remaining);
